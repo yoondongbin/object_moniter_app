@@ -1,30 +1,27 @@
-// MainScreen.styles.ts
+// src/styles/MainScreen.styles.ts
+
 import { StyleSheet } from 'react-native';
 
-export const styles = StyleSheet.create({
+const MainScreenStyles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
     backgroundColor: '#fff',
+    paddingVertical: 20,
   },
-  title: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    marginBottom: 24,
-  },
-  card: {
-    padding: 16,
-    marginBottom: 16,
-    borderRadius: 8,
-    backgroundColor: '#f0f0f0',
-  },
-  cardTitle: {
+  sectionTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: 'bold',
+    marginHorizontal: 16,
+    marginTop: 8,
+    marginBottom: 6,
   },
-  cardDesc: {
-    marginTop: 6,
-    fontSize: 14,
-    color: '#555',
+  listContainer: {
+    paddingHorizontal: 16,
+  },
+  alertListContainer: {
+    paddingHorizontal: 16,
+    paddingBottom: 20,
   },
 });
+
+export default MainScreenStyles;

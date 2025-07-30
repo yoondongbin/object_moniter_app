@@ -1,8 +1,6 @@
-import React from 'react'
-import MainScreen from './src/screens/MainScreen'
+import React from 'react';
+import AppNavigator from './src/navigation/AppNavigator';
 
-const App = () => {
-  return <MainScreen />;
-};
-
-export default App
+export default function App() {
+  return <AppNavigator />;
+}
