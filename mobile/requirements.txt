@@ -1,0 +1,125 @@
+# React Native 객체 탐지 관리자용 앱 - 필수 라이브러리 목록
+# =====================================================
+
+## 📱 핵심 React Native 라이브러리
+# =====================================================
+
+# React Native 기본
+react-native@0.80.2
+react@19.1.0
+
+# 네비게이션
+@react-navigation/native@^7.1.16
+@react-navigation/native-stack@^7.3.23
+@react-navigation/bottom-tabs@^7.4.4
+react-native-screens@^4.13.1
+react-native-safe-area-context@^5.5.2
+
+# 애니메이션 및 제스처
+react-native-gesture-handler@^2.27.2
+react-native-reanimated@^4.0.1
+react-native-worklets@^0.4.0
+
+# 차트 및 시각화
+react-native-chart-kit@^6.12.0
+react-native-svg@^15.12.0
+
+# 날짜 처리
+dayjs@^1.11.13
+
+# =====================================================
+## 🔧 개발 도구 (DevDependencies)
+# =====================================================
+
+# TypeScript
+typescript@5.0.4
+@types/react@^19.1.0
+@types/react-test-renderer@^19.1.0
+@types/jest@^29.5.13
+
+# Babel
+@babel/core@^7.25.2
+@babel/preset-env@^7.25.3
+@babel/runtime@^7.25.0
+@react-native/babel-preset@0.80.2
+
+# React Native CLI
+@react-native-community/cli@19.1.1
+@react-native-community/cli-platform-android@19.1.1
+@react-native-community/cli-platform-ios@19.1.1
+
+# Metro & 설정
+@react-native/metro-config@0.80.2
+@react-native/typescript-config@0.80.2
+@react-native/eslint-config@0.80.2
+
+# 코드 품질
+eslint@^8.19.0
+prettier@2.8.8
+
+# 테스팅
+jest@^29.6.3
+react-test-renderer@19.1.0
+
+# =====================================================
+## 🚀 추가 권장 라이브러리 (미설치)
+# =====================================================
+
+# HTTP 클라이언트 (API 통신)
+# axios@^1.6.0
+
+# 푸시 알림
+# @react-native-firebase/messaging@^18.7.3
+# react-native-push-notification@^8.1.1
+
+# 이미지 처리
+# react-native-image-picker@^7.1.0
+# react-native-fast-image@^8.6.3
+
+# 로컬 저장소
+# @react-native-async-storage/async-storage@^1.21.0
+
+# 상태 관리
+# @reduxjs/toolkit@^2.0.1
+# react-redux@^9.0.4
+
+# 폼 관리
+# react-hook-form@^7.48.2
+# @hookform/resolvers@^3.3.2
+
+# 유틸리티
+# lodash@^4.17.21
+# react-native-vector-icons@^10.0.3
+
+# =====================================================
+## 📋 설치 명령어
+# =====================================================
+
+# 기본 라이브러리 설치
+# npm install
+
+# 추가 권장 라이브러리 설치 (필요시)
+# npm install axios @react-native-firebase/messaging react-native-push-notification react-native-image-picker react-native-fast-image @react-native-async-storage/async-storage @reduxjs/toolkit react-redux react-hook-form @hookform/resolvers lodash react-native-vector-icons
+
+# iOS 의존성 설치
+# cd ios && bundle exec pod install && cd ..
+
+# =====================================================
+## 🔍 프로젝트 요구사항
+# =====================================================
+
+# Node.js 버전: >=18
+# React Native 버전: 0.80.2
+# TypeScript 버전: 5.0.4
+
+# =====================================================
+## 📱 주요 기능별 라이브러리
+# =====================================================
+
+# 1. 네비게이션: @react-navigation/*
+# 2. 차트 시각화: react-native-chart-kit, react-native-svg
+# 3. 애니메이션: react-native-reanimated, react-native-gesture-handler
+# 4. API 통신: axios (추가 필요)
+# 5. 푸시 알림: @react-native-firebase/messaging (추가 필요)
+# 6. 이미지 처리: react-native-image-picker (추가 필요)
+# 7. 로컬 저장소: @react-native-async-storage/async-storage (추가 필요) 
