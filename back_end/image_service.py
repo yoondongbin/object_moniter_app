@@ -67,25 +67,6 @@ class ImageService:
             print(f"❌ Base64 이미지 저장 오류: {str(e)}")
             return None
     
-    def draw_detection_boxes(self, frame, detected_objects):
-        """탐지된 객체에 바운딩 박스 그리기"""
-        annotated_frame = frame.copy()
-        
-        for obj in detected_objects:
-            x, y, w, h = obj['bbox']
-            confidence = obj['confidence']
-            class_name = obj['class']
-            
-            # 바운딩 박스 그리기
-            cv2.rectangle(annotated_frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
-            
-            # 라벨 그리기
-            label = f"{class_name}: {confidence:.2f}"
-            cv2.putText(annotated_frame, label, (x, y - 10), 
-                       cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-        
-        return annotated_frame
-    
     def get_image_url(self, image_path):
         """이미지 URL 생성"""
         if not image_path:
