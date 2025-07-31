@@ -1,4 +1,5 @@
-from flask import Blueprint, request, jsonify
+import json
+from flask import Blueprint, request, jsonify, Response
 from flask_jwt_extended import jwt_required, get_jwt_identity, create_access_token, create_refresh_token
 from werkzeug.security import check_password_hash, generate_password_hash
 from models import db, User, Object, MonitoringLog, Notification, DetectionResult
@@ -181,32 +182,6 @@ def get_object_logs(object_id):
     logs = MonitoringLog.query.filter_by(object_id=object_id).order_by(MonitoringLog.timestamp.desc()).all()
     return jsonify([log.to_dict() for log in logs])
 
-@logs_bp.route('/<int:object_id>/logs', methods=['POST'])
-@jwt_required()
-def create_log(object_id):
-    """새 모니터링 로그 생성"""
-    user_id = get_jwt_identity()
-    obj = Object.query.filter_by(id=object_id, user_id=user_id).first()
-    
-    if not obj:
-        return jsonify({'error': 'Object not found'}), 404
-    
-    data = request.get_json()
-    
-    if not data or not data.get('event_type'):
-        return jsonify({'error': 'Event type is required'}), 400
-    
-    new_log = MonitoringLog(
-        object_id=object_id,
-        event_type=data['event_type'],
-        message=data.get('message', '')
-    )
-    
-    db.session.add(new_log)
-    db.session.commit()
-    
-    return jsonify(new_log.to_dict()), 201
-
 # 알림 관련 라우트
 @notifications_bp.route('/', methods=['GET'])
 @jwt_required()
@@ -246,6 +221,85 @@ def delete_notification(notification_id):
     db.session.commit()
     
     return jsonify({'message': 'Notification deleted successfully'})
+
+@notifications_bp.route('/send-internal', methods=['POST'])
+def send_notification_internal():
+    """시스템 내부에서 알림 전송 (JWT 불필요)"""
+    try:
+        data = request.get_json()
+        
+        if not data:
+            return jsonify({'error': 'Request body is required'}), 400
+        
+        notification_id = data.get('notification_id')
+        user_id = data.get('user_id')
+        
+        if not notification_id or not user_id:
+            return jsonify({'error': 'notification_id and user_id are required'}), 400
+        
+        # 알림 조회
+        notification = Notification.query.filter_by(
+            id=notification_id, 
+            user_id=user_id
+        ).first()
+        
+        if not notification:
+            return jsonify({'error': 'Notification not found'}), 404
+        
+        # 알림 전송 처리
+        sent_result = send_single_notification(notification)
+        
+        if sent_result:
+            # 전송 성공 시 읽음으로 표시
+            notification.is_read = True
+            db.session.commit()
+            
+            return jsonify({
+                'success': True,
+                'message': '알림이 성공적으로 전송되었습니다.',
+                'notification': {
+                    'id': notification.id,
+                    'title': notification.title,
+                    'message': notification.message,
+                    'type': notification.notification_type,
+                    'sent_at': datetime.utcnow().isoformat()
+                }
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': '알림 전송에 실패했습니다.',
+                'notification': {
+                    'id': notification.id,
+                    'title': notification.title,
+                    'message': notification.message,
+                    'type': notification.notification_type,
+                    'sent_at': datetime.utcnow().isoformat()
+                }
+            }), 500
+        
+    except Exception as e:
+        return jsonify({'error': f'알림 전송 오류: {str(e)}'}), 500
+
+def send_single_notification(notification):
+    """단일 알림 전송 (실제 구현에서는 이메일, SMS, 푸시 등 사용)"""
+    try:
+        # 여기에 실제 알림 전송 로직 구현
+        # 예: 이메일, SMS, 푸시 알림, 웹소켓 등
+        
+        # 현재는 콘솔 출력으로 시뮬레이션
+        print(f"📧 알림 전송: {notification.title} - {notification.message}")
+        print(f"   수신자: User ID {notification.user_id}")
+        print(f"   객체: Object ID {notification.object_id}")
+        print(f"   타입: {notification.notification_type}")
+        print(f"   시간: {notification.created_at}")
+        print("-" * 50)
+        
+        return True
+        
+    except Exception as e:
+        print(f"❌ 알림 전송 실패: {str(e)}")
+        return False
 
 # 객체 탐지 모니터링 API
 @objects_bp.route('/<int:object_id>/monitor', methods=['POST'])
@@ -328,52 +382,52 @@ def process_detection(object_id):
         return jsonify({'error': f'탐지 처리 오류: {str(e)}'}), 500
 
 # 수동 탐지 API (기존 upload-image 대체)
-@objects_bp.route('/<int:object_id>/manual-detect', methods=['POST'])
-@jwt_required()
-def manual_detection(object_id):
-    """수동 이미지 탐지 (업로드된 이미지로 탐지 수행)"""
-    user_id = get_jwt_identity()
-    obj = Object.query.filter_by(id=object_id, user_id=user_id).first()
+# @objects_bp.route('/<int:object_id>/manual-detect', methods=['POST'])
+# @jwt_required()
+# def manual_detection(object_id):
+#     """수동 이미지 탐지 (업로드된 이미지로 탐지 수행)"""
+#     user_id = get_jwt_identity()
+#     obj = Object.query.filter_by(id=object_id, user_id=user_id).first()
     
-    if not obj:
-        return jsonify({'error': 'Object not found'}), 404
+#     if not obj:
+#         return jsonify({'error': 'Object not found'}), 404
     
-    try:
-        data = request.get_json()
-        frame_data = data.get('frame_data')  # base64 인코딩된 이미지
+#     try:
+#         data = request.get_json()
+#         frame_data = data.get('frame_data')  # base64 인코딩된 이미지
         
-        if not frame_data:
-            return jsonify({'error': 'Frame data is required'}), 400
+#         if not frame_data:
+#             return jsonify({'error': 'Frame data is required'}), 400
         
-        # Base64 이미지를 numpy 배열로 변환
-        import base64
-        import cv2
-        import numpy as np
+#         # Base64 이미지를 numpy 배열로 변환
+#         import base64
+#         import cv2
+#         import numpy as np
         
-        # Base64 데이터에서 이미지 부분 추출
-        if frame_data.startswith('data:image'):
-            frame_data = frame_data.split(',')[1]
+#         # Base64 데이터에서 이미지 부분 추출
+#         if frame_data.startswith('data:image'):
+#             frame_data = frame_data.split(',')[1]
         
-        # Base64 디코딩
-        image_data = base64.b64decode(frame_data)
-        nparr = np.frombuffer(image_data, np.uint8)
-        frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+#         # Base64 디코딩
+#         image_data = base64.b64decode(frame_data)
+#         nparr = np.frombuffer(image_data, np.uint8)
+#         frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
         
-        if frame is None:
-            return jsonify({'error': 'Invalid image data'}), 400
+#         if frame is None:
+#             return jsonify({'error': 'Invalid image data'}), 400
         
-        # 탐지 서비스 호출 (실제 탐지 수행)
-        from detection_service import detection_service
-        result = detection_service.process_frame(frame, object_id, user_id)
+#         # 탐지 서비스 호출 (실제 탐지 수행)
+#         from detection_service import detection_service
+#         result = detection_service.process_frame(frame, object_id, user_id)
         
-        return jsonify({
-            'message': 'Manual detection completed',
-            'result': result,
-            'object': obj.to_dict()
-        })
+#         return jsonify({
+#             'message': 'Manual detection completed',
+#             'result': result,
+#             'object': obj.to_dict()
+#         })
         
-    except Exception as e:
-        return jsonify({'error': f'Manual detection error: {str(e)}'}), 500
+#     except Exception as e:
+#         return jsonify({'error': f'Manual detection error: {str(e)}'}), 500
 
 # 탐지 결과 관련 라우트
 @objects_bp.route('/<int:object_id>/detections', methods=['GET'])
@@ -427,39 +481,27 @@ def get_detection_stats(object_id):
     ).filter_by(object_id=object_id)\
      .group_by(DetectionResult.danger_level).all()
     
-    # 객체 타입별 통계
+    # 서비스 장소별 통계
     class_stats = db.session.query(
-        DetectionResult.object_class,
+        Object.name,
         db.func.count(DetectionResult.id)
-    ).filter_by(object_id=object_id)\
-     .group_by(DetectionResult.object_class).all()
+    ).join(Object, DetectionResult.object_id == Object.id)\
+     .filter(Object.user_id == user_id)\
+     .group_by(Object.name).all()
     
     # 오늘 탐지 개수
     today = datetime.utcnow().date()
     today_count = DetectionResult.query.filter_by(object_id=object_id)\
         .filter(db.func.date(DetectionResult.created_at) == today).count()
     
-    return jsonify({
+    result_data = {
         'danger_level_stats': dict(danger_stats),
         'object_class_stats': dict(class_stats),
         'today_detections': today_count,
         'total_detections': DetectionResult.query.filter_by(object_id=object_id).count()
-    })
-
-def create_alert_notification(user_id, object_id, title, message, notification_type='warning'):
-    """위험 알림 생성 함수"""
-    notification = Notification(
-        user_id=user_id,
-        object_id=object_id,
-        title=title,
-        message=message,
-        notification_type=notification_type
+    }
+    
+    return Response(
+        json.dumps(result_data, ensure_ascii=False),
+        mimetype='application/json'
     )
-    
-    db.session.add(notification)
-    db.session.commit()
-    
-    # 여기에 실제 알림 전송 로직 추가 (이메일, SMS, 푸시 등)
-    print(f"🚨 알림 생성: {title} - {message}")
-    
-    return notification

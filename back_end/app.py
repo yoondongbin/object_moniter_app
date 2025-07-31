@@ -16,6 +16,10 @@ def create_app(config_name='default'):
     """Flask 애플리케이션 팩토리 함수"""
     app = Flask(__name__)
     
+    # JSON 인코딩 설정 (한글 지원)
+    app.config['JSON_AS_ASCII'] = False
+    app.config['JSONIFY_PRETTYPRINT_REGULAR'] = True
+    
     # 설정 로드
     app.config.from_object(config[config_name])
     
