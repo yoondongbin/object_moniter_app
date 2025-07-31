@@ -3,6 +3,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity, create_access_tok
 from werkzeug.security import check_password_hash, generate_password_hash
 from models import db, User, Object, MonitoringLog, Notification, DetectionResult
 from image_service import image_service
+from use_detection_model import use_detection_model
 from datetime import datetime
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/api/auth')
@@ -270,6 +271,9 @@ def start_monitoring(object_id):
 @jwt_required()
 def process_detection(object_id):
     """객체 탐지 처리 (실제 카메라 프레임 처리)"""
+
+    data = request.get_json()
+    image_path = data.get('image_path')
     user_id = get_jwt_identity()
     obj = Object.query.filter_by(id=object_id, user_id=user_id).first()
     
@@ -278,8 +282,8 @@ def process_detection(object_id):
     
     try:
         # 프레임 데이터 받기 (실제로는 카메라에서 받음)
-        data = request.get_json()
-        frame_data = data.get('frame_data')  # base64 인코딩된 이미지
+        data = use_detection_model.detect_object(image_path)
+        frame_data = data.get('image')  # base64 인코딩된 이미지
         
         if not frame_data:
             return jsonify({'error': 'Frame data is required'}), 400
@@ -302,9 +306,17 @@ def process_detection(object_id):
         if frame is None:
             return jsonify({'error': 'Invalid image data'}), 400
         
+        new_detection_result = {
+            'image': frame_data,
+            'confidence': data.get('confidence'),
+            'class': data.get('class'),
+            'detected_object': data.get('detected_object'),
+            'bbox_coordinates': data.get('bbox_coordinates')
+        }
+
         # 탐지 서비스 호출
         from detection_service import detection_service
-        result = detection_service.process_frame(frame, object_id, user_id)
+        result = detection_service.process_frame(new_detection_result, object_id, user_id)
         
         return jsonify({
             'message': '탐지 완료',
