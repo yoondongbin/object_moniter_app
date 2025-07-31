@@ -1,44 +1,40 @@
-import { View, Text, TouchableOpacity } from 'react-native'
-import React from 'react'
-import styles from '../styles/WeekSelector.styles'
+import React from 'react';
+import { View } from 'react-native';
+import { Picker } from '@react-native-picker/picker';
+import styles from '../styles/WeekSelector.styles';
+import { getOldestDate } from '../utils/statsUtils';
+import { dummyStats } from '../data/dummyStats';
 
-type Props = {
-    selectedOffset: number; // 0: 이번주, 1: 지난주, 2: 그저께, 3: 그저저번주
+interface Props {
+    selectedOffset: number;
     onChange: (offset: number) => void;
-}
-
-const maxWeeks = 12;
-
-const generateWeekLabels = (count: number) => {
-    return Array.from({ length: count + 1 }, (_, i) =>
-        i === 0 ? '이번 주' : `${i}주 전`
-    )
-}
-
-export default function WeekSelector({ selectedOffset, onChange }: Props) {
-    const weekLabels = generateWeekLabels(maxWeeks);
-
-  return (
-    <View style={styles.container}>
-      {weekLabels.map((label, index) => (
-        <TouchableOpacity
-            key={index}
-            style={[
-                styles.button,
-                selectedOffset === index && styles.selectedButton,
-            ]}
-            onPress={() => onChange(index)}
+  }
+  
+  const WeekSelector = ({ selectedOffset, onChange }: Props) => {
+    const now = new Date();
+    const firstDate = getOldestDate(dummyStats);
+    const weekDiff = Math.floor(
+      (now.getTime() - firstDate.getTime()) / (1000 * 60 * 60 * 24 * 7)
+    );
+  
+    const options = Array.from({ length: weekDiff + 1 }, (_, i) => ({
+      label: i === 0 ? '이번 주' : `${i}주 전`,
+      value: i,
+    }));
+  
+    return (
+      <View style={styles.container}>
+        <Picker
+          selectedValue={selectedOffset}
+          onValueChange={(value) => onChange(value)}
+          style={styles.picker}
         >
-            <Text
-                style={[
-                    styles.buttonText,
-                    selectedOffset === index && styles.selectedButtonText,
-                ]}
-            >
-                {label}
-            </Text>
-        </TouchableOpacity>
-      ))}
-    </View>
-  )
-}
+          {options.map((opt) => (
+            <Picker.Item key={opt.value} label={opt.label} value={opt.value} />
+          ))}
+        </Picker>
+      </View>
+    );
+  };
+  
+  export default WeekSelector;
