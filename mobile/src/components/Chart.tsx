@@ -1,32 +1,36 @@
 import React from 'react';
 import { View, Dimensions } from 'react-native';
 import { BarChart } from 'react-native-chart-kit';
-import { DailyStats } from '../data/dummyStats';
-import styles, { chartConfig } from '../styles/Chart.styles';
-
-type Props = {
-    data: DailyStats[];
-}
+import styles from '../styles/Chart.styles';
+import chartConfig from '../config/chartConfig';
 
 const screenWidth = Dimensions.get('window').width;
 
+interface Props {
+  data: {
+    labels: string[];
+    datasets: { data: number[] }[];
+  };
+}
+
 export default function Chart({ data }: Props) {
-    const chartData = {
-        labels: data.map((d) => d.date.slice(5)), // 월일만 추출
-        datasets: [{ data: data.map((d) => d.count) }],
-    }
   return (
     <View style={styles.container}>
       <BarChart
-        data={chartData}
-        width={screenWidth - 32}
-        height={220}
-        fromZero={true}
+        data={data}
+        width={screenWidth - 44}
+        height={320}
+        fromZero
+        yAxisSuffix=""
+        yAxisInterval={1}
+        showValuesOnTopOfBars
+        yAxisLabel="탐지 횟수"
         chartConfig={chartConfig}
         style={styles.chart}
-        yAxisLabel=""
-        yAxisSuffix=""
+        showBarTops={false}
+        verticalLabelRotation={0}
+        horizontalLabelRotation={0}
       />
     </View>
-  )
+  );
 }
