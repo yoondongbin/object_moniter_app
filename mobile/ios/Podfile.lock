@@ -2481,7 +2481,7 @@ PODS:
     - ReactCommon/turbomodule/core
     - SocketRocket
     - Yoga
-  - RNSVG (15.12.0):
+  - RNSVG (15.12.1):
     - boost
     - DoubleConversion
     - fast_float
@@ -2508,10 +2508,10 @@ PODS:
     - ReactCodegen
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
-    - RNSVG/common (= 15.12.0)
+    - RNSVG/common (= 15.12.1)
     - SocketRocket
     - Yoga
-  - RNSVG/common (15.12.0):
+  - RNSVG/common (15.12.1):
     - boost
     - DoubleConversion
     - fast_float
@@ -2569,7 +2569,7 @@ PODS:
     - ReactCommon/turbomodule/core
     - SocketRocket
     - Yoga
-  - RNWorklets (0.4.0):
+  - RNWorklets (0.4.1):
     - boost
     - DoubleConversion
     - fast_float
@@ -2596,10 +2596,10 @@ PODS:
     - ReactCodegen
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
-    - RNWorklets/worklets (= 0.4.0)
+    - RNWorklets/worklets (= 0.4.1)
     - SocketRocket
     - Yoga
-  - RNWorklets/worklets (0.4.0):
+  - RNWorklets/worklets (0.4.1):
     - boost
     - DoubleConversion
     - fast_float
@@ -2626,10 +2626,10 @@ PODS:
     - ReactCodegen
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
-    - RNWorklets/worklets/apple (= 0.4.0)
+    - RNWorklets/worklets/apple (= 0.4.1)
     - SocketRocket
     - Yoga
-  - RNWorklets/worklets/apple (0.4.0):
+  - RNWorklets/worklets/apple (0.4.1):
     - boost
     - DoubleConversion
     - fast_float
@@ -2988,18 +2988,17 @@ SPEC CHECKSUMS:
   React-RuntimeHermes: ba549a5834a6592d243b9a605530ecd7b6f5e79c
   React-runtimescheduler: 9a9914d58caec7976aaae381cd2d997408f2260f
   React-timing: 4f97958cc918f0af9444f93e4a7083415e6f5daf
-  React-utils: f491e2726eb8ced8af13893e1f77317f0fa9a954
-  ReactAppDependencyProvider: 8df342c127fd0c1e30e8b9f71ff814c22414a7c0
-  ReactCodegen: 439c427ccc115d71d16cc84256e5fbdc7fcef57a
-  ReactCommon: 592ef441605638b95e533653259254b4bd35ff4f
-  RNCAsyncStorage: 579cd39b67a6eac3ffc4ebb45ad169b11b0f6fe7
-  RNCPicker: 3959648fed5fbfe8065368fbdf2420c7e73b2587
-  RNGestureHandler: a0c83d8e4422f2ac04d1acb1741866a5184c7b73
-  RNReanimated: 028d25ae4031eb5a9aeb5febbe2c2cd0c744aa9c
-  RNScreens: c63849403489bd068ea160f276fbc8416f19f2f7
-  RNSVG: 341f555dbcd83a34d1f058e88df387de7bbc3347
-  RNVectorIcons: be4d047a76ad307ffe54732208fb0498fcb8477f
-  RNWorklets: 09b1efb10eb4c8b886db5edcccd33bdf38659710
+  React-utils: 3c4b0b7788e4dc132d1bf918bc0615e2b21f36b3
+  ReactAppDependencyProvider: 6c9197c1f6643633012ab646d2bfedd1b0d25989
+  ReactCodegen: 9ea66ee246511816b72e9d6e380f884b7b3b99d7
+  ReactCommon: 7aca047f2f453a7d7f0adeccb63810d61829235a
+  RNCAsyncStorage: 8e9406ce79bba50a7ab965e1c05a93044f230de6
+  RNGestureHandler: 502fd35c8e1d326562536ff256e61e38d703eafb
+  RNReanimated: 8551defecb5f76b38e1b16a3345822da4c259de0
+  RNScreens: 75074e642b69b086813a943bdf63da7085fb2166
+  RNSVG: c73af7848d94ca3e8136a5191d055e3c1d6fedab
+  RNVectorIcons: 54df27a2e90ddeb674c7237d76060ec9762d0bc5
+  RNWorklets: 8db874f555e240de36214cf092569427f5b78010
   SocketRocket: d4aabe649be1e368d1318fdf28a022d714d65748
   Yoga: a742cc68e8366fcfc681808162492bc0aa7a9498
 

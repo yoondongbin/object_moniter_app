@@ -1,24 +1,40 @@
 import { StyleSheet } from 'react-native';
 
-const AlertSummaryCardStyles = StyleSheet.create({
+export default StyleSheet.create({
   card: {
-    padding: 12,
-    backgroundColor: '#fff3f3',
-    borderColor: '#f99',
+    backgroundColor: '#fff5f5',
+    borderColor: '#ff9999',
     borderWidth: 1,
-    borderRadius: 6,
-    marginBottom: 10,
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 12,
   },
-  alertText: {
+  row: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  type: {
+    fontSize: 15,
     fontWeight: 'bold',
-    fontSize: 14,
-    color: '#b00',
+    color: '#d93025',
+  },
+  severity: {
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  high: {
+    color: '#d93025',
+  },
+  medium: {
+    color: '#f9ab00',
+  },
+  low: {
+    color: '#188038',
   },
   time: {
     fontSize: 12,
-    color: '#555',
-    marginTop: 4,
+    color: '#666',
+    marginTop: 6,
   },
 });
-
-export default AlertSummaryCardStyles;
