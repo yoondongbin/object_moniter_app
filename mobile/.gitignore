@@ -1,6 +1,7 @@
 # OSX
 #
 .DS_Store
+.env
 
 # Xcode
 #
@@ -21,6 +22,11 @@ DerivedData
 *.ipa
 *.xcuserstate
 **/.xcode.env.local
+ios/build/
+ios/*.xcuserstate
+ios/DerivedData/
+ios/*.ipa
+ios/Pods/
 
 # Android/IntelliJ
 #
@@ -34,6 +40,11 @@ local.properties
 *.keystore
 !debug.keystore
 .kotlin/
+android/build/
+android/.gradle/
+android/local.properties
+android/*.keystore
+!android/debug.keystore
 
 # node.js
 #

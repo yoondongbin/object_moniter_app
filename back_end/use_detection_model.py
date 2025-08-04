@@ -98,34 +98,3 @@ class Use_detection_model:
 
 
 use_detection_model = Use_detection_model()
-
-if __name__ == "__main__":
-    # 무작위 이미지 선택
-    image_path = use_detection_model.get_random_image()
-    
-    if image_path:
-        # 객체 탐지 및 바운딩 박스 그리기
-        result = use_detection_model.detect_object(image_path)
-        
-        if result is not None:
-            print("=== 탐지 결과 ===")
-            print(f"탐지된 객체 수: {result['detected_object']}")
-            print(f"클래스: {result['class']}")
-            print(f"신뢰도: {result['confidence']:.2f}")
-            print(f"바운딩 박스 좌표: {result['bbox_coordinates']}")
-            print(f"Base64 이미지 길이: {len(result['image'])}")
-            
-            # 테스트용으로 파일로도 저장
-            import base64
-            # base64에서 이미지 데이터 추출
-            image_data = result['image']
-            if image_data.startswith('data:image'):
-                image_data = image_data.split(',')[1]
-            decoded_image = base64.b64decode(image_data)
-            with open("/Users/yunseong/Desktop/React_native/Object_monitor/object_moniter_app/back_end/image/result_img/result_with_bbox.jpg", "wb") as f:
-                f.write(decoded_image)
-            print("테스트용 이미지 파일도 저장되었습니다.")
-        else:
-            print("객체 탐지에 실패했습니다.")
-    else:
-        print("이미지를 선택할 수 없습니다.")

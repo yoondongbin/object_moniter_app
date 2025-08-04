@@ -141,6 +141,31 @@ class ObjectDetectionService:
                 'alert_message': f'탐지 시스템 오류: {str(e)}',
                 'detected_objects': []
             }
-
-# 전역 서비스 인스턴스
+    def send_app_notification(notification):
+        """앱 내부 알림 전송"""
+        try:
+            # 웹소켓을 통한 실시간 알림 전송
+            import json
+            from flask_socketio import emit
+            
+            notification_data = {
+                'id': notification.id,
+                'title': notification.title,
+                'message': notification.message,
+                'type': notification.notification_type,
+                'object_id': notification.object_id,
+                'user_id': notification.user_id,
+                'timestamp': notification.created_at.isoformat()
+            }
+            
+            # 특정 사용자에게 알림 전송
+            emit('탐지 알림', notification_data, room=f'user_{notification.user_id}')
+            
+            print(f"📱 앱 알림 전송: {notification.title}")
+            return True
+            
+        except Exception as e:
+            print(f"❌ 앱 알림 전송 실패: {str(e)}")
+            return False
+        
 detection_service = ObjectDetectionService() 

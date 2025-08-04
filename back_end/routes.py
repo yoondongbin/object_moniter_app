@@ -3,13 +3,13 @@ from flask import Blueprint, request, jsonify, Response
 from flask_jwt_extended import jwt_required, get_jwt_identity, create_access_token, create_refresh_token
 from werkzeug.security import check_password_hash, generate_password_hash
 from models import db, User, Object, MonitoringLog, Notification, DetectionResult
-from image_service import image_service
 from use_detection_model import use_detection_model
 from datetime import datetime
+from detection_service import detection_service
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/api/auth')
 objects_bp = Blueprint('objects', __name__, url_prefix='/api/objects')
-logs_bp = Blueprint('logs', __name__, url_prefix='/api/objects')
+logs_bp = Blueprint('logs', __name__, url_prefix='/api/logs')
 notifications_bp = Blueprint('notifications', __name__, url_prefix='/api/notifications')
 
 @auth_bp.route('/login', methods=['POST'])
@@ -109,6 +109,58 @@ def register():
         print(f"❌ 오류 발생: {str(e)}")
         return jsonify({'error': 'Internal server error'}), 500 
 
+@objects_bp.route('/', methods=['POST'])
+@jwt_required()
+def create_object():
+    """새로운 객체 생성"""
+    try:
+        user_id = get_jwt_identity()
+        data = request.get_json()
+        
+        if not data:
+            return jsonify({'error': 'Request body is required'}), 400
+        
+        # 필수 필드 검증
+        name = data.get('name', '').strip()
+        description = data.get('description', '').strip()
+        object_type = data.get('object_type', 'general')  # 기본값 설정
+        
+        if not name:
+            return jsonify({'error': 'Object name is required'}), 400
+        
+        # 중복 이름 검사 (같은 사용자 내에서)
+        existing_object = Object.query.filter_by(
+            name=name, 
+            user_id=user_id
+        ).first()
+        
+        if existing_object:
+            return jsonify({'error': 'Object with this name already exists'}), 400
+        
+        # 새 객체 생성
+        new_object = Object(
+            name=name,
+            description=description,
+            object_type=object_type,
+            user_id=user_id,
+            status='inactive'  # 기본 상태
+        )
+        
+        db.session.add(new_object)
+        db.session.commit()
+        
+        print(f"✅ 객체 생성 완료: {new_object.to_dict()}")
+        
+        return jsonify({
+            'message': 'Object created successfully',
+            'object': new_object.to_dict()
+        }), 201
+        
+    except Exception as e:
+        print(f"❌ 객체 생성 오류: {str(e)}")
+        db.session.rollback()
+        return jsonify({'error': 'Internal server error'}), 500
+
 @objects_bp.route('/', methods=['GET'])
 @jwt_required()
 def get_objects():
@@ -169,7 +221,7 @@ def delete_object(object_id):
     return jsonify({'message': 'Object deleted successfully'})
 
 # 로그 관련 라우트
-@logs_bp.route('/<int:object_id>/logs', methods=['GET'])
+@logs_bp.route('/<int:object_id>', methods=['GET'])
 @jwt_required()
 def get_object_logs(object_id):
     """객체의 모니터링 로그 조회"""
@@ -247,7 +299,7 @@ def send_notification_internal():
             return jsonify({'error': 'Notification not found'}), 404
         
         # 알림 전송 처리
-        sent_result = send_single_notification(notification)
+        sent_result = detection_service.send_app_notification(notification)
         
         if sent_result:
             # 전송 성공 시 읽음으로 표시
@@ -281,43 +333,25 @@ def send_notification_internal():
     except Exception as e:
         return jsonify({'error': f'알림 전송 오류: {str(e)}'}), 500
 
-def send_single_notification(notification):
-    """단일 알림 전송 (실제 구현에서는 이메일, SMS, 푸시 등 사용)"""
-    try:
-        # 여기에 실제 알림 전송 로직 구현
-        # 예: 이메일, SMS, 푸시 알림, 웹소켓 등
-        
-        # 현재는 콘솔 출력으로 시뮬레이션
-        print(f"📧 알림 전송: {notification.title} - {notification.message}")
-        print(f"   수신자: User ID {notification.user_id}")
-        print(f"   객체: Object ID {notification.object_id}")
-        print(f"   타입: {notification.notification_type}")
-        print(f"   시간: {notification.created_at}")
-        print("-" * 50)
-        
-        return True
-        
-    except Exception as e:
-        print(f"❌ 알림 전송 실패: {str(e)}")
-        return False
-
 # 객체 탐지 모니터링 API
-@objects_bp.route('/<int:object_id>/monitor', methods=['POST'])
+@objects_bp.route('/<int:object_id>/status', methods=['PUT'])
 @jwt_required()
-def start_monitoring(object_id):
-    """객체 모니터링 시작"""
+def update_object_status(object_id):
+    """객체 상태 변경"""
     user_id = get_jwt_identity()
     obj = Object.query.filter_by(id=object_id, user_id=user_id).first()
     
     if not obj:
         return jsonify({'error': 'Object not found'}), 404
+    if obj.status == 'active':
+        obj.status = 'inactive'
+    else:
+        obj.status = 'active'
     
-    # 모니터링 상태 업데이트
-    obj.status = 'monitoring'
     db.session.commit()
     
     return jsonify({
-        'message': f'모니터링 시작: {obj.name}',
+        'message': f'상태 변경: {obj.name} -> {obj.status}',
         'object': obj.to_dict()
     })
 
@@ -463,6 +497,52 @@ def get_detection_detail(object_id, detection_id):
         return jsonify({'error': 'Detection result not found'}), 404
     
     return jsonify(detection.to_dict())
+
+@objects_bp.route('/<int:object_id>/detections/<int:detection_id>', methods=['DELETE'])
+@jwt_required()
+def delete_detection_result(object_id, detection_id):
+    """특정 객체의 특정 탐지 결과 삭제"""
+    try:
+        user_id = get_jwt_identity()
+        
+        # 객체 존재 확인 (사용자 소유 확인)
+        obj = Object.query.filter_by(id=object_id, user_id=user_id).first()
+        if not obj:
+            return jsonify({'error': 'Object not found'}), 404
+        
+        # 탐지 결과 존재 확인
+        detection = DetectionResult.query.filter_by(
+            id=detection_id, 
+            object_id=object_id
+        ).first()
+        
+        if not detection:
+            return jsonify({'error': 'Detection result not found'}), 404
+        
+        # 삭제 전 정보 저장 (응답용)
+        detection_info = {
+            'id': detection.id,
+            'created_at': detection.created_at.isoformat(),
+            'confidence': detection.confidence,
+            'danger_level': detection.danger_level
+        }
+        
+        # 탐지 결과 삭제
+        db.session.delete(detection)
+        db.session.commit()
+        
+        print(f"✅ 탐지 결과 삭제 완료: Object {object_id}, Detection {detection_id}")
+        
+        return jsonify({
+            'message': 'Detection result deleted successfully',
+            'deleted_detection': detection_info,
+            'object_id': object_id
+        }), 200
+        
+    except Exception as e:
+        print(f"❌ 탐지 결과 삭제 오류: {str(e)}")
+        db.session.rollback()
+        return jsonify({'error': 'Internal server error'}), 500
 
 @objects_bp.route('/<int:object_id>/detections/stats', methods=['GET'])
 @jwt_required()
