@@ -1,27 +1,33 @@
-// src/styles/MainScreen.styles.ts
-
 import { StyleSheet } from 'react-native';
 
-const MainScreenStyles = StyleSheet.create({
+export default StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
-    paddingVertical: 20,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     marginHorizontal: 16,
-    marginTop: 8,
-    marginBottom: 6,
+    marginTop: 20,
+    marginBottom: 10,
   },
   listContainer: {
-    paddingHorizontal: 16,
+    paddingLeft: 16,
+    paddingRight: 16,
+    paddingBottom: 8,
   },
   alertListContainer: {
     paddingHorizontal: 16,
     paddingBottom: 20,
   },
+  moreButtonContainer: {
+    alignSelf: 'flex-end',
+    marginRight: 16,
+    marginTop: 8,
+  },
+  moreButtonText: {
+    color: '#007aff',
+    fontSize: 14,
+  },
 });
-
-export default MainScreenStyles;

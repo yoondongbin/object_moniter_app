@@ -19,17 +19,14 @@ export default function Chart({ data }: Props) {
       <BarChart
         data={data}
         width={screenWidth - 44}
-        height={320}
-        fromZero
-        yAxisSuffix=""
+        height={280}
+        fromZero={true}
+        yAxisLabel=""
+        yAxisSuffix="회"
         yAxisInterval={1}
-        showValuesOnTopOfBars
-        yAxisLabel="탐지 횟수"
+        showValuesOnTopOfBars={true}
         chartConfig={chartConfig}
         style={styles.chart}
-        showBarTops={false}
-        verticalLabelRotation={0}
-        horizontalLabelRotation={0}
       />
     </View>
   );
