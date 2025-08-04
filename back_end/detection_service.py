@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 from datetime import datetime
 from models import db, Object, MonitoringLog, Notification, DetectionResult
-from routes import create_alert_notification
+from utils import create_alert_notification
 from image_service import image_service
 
 class ObjectDetectionService:

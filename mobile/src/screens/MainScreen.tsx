@@ -1,28 +1,127 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, Alert, Image, ActivityIndicator } from 'react-native';
 import styles from '../styles/MainScreen.styles';
-import { getDetections } from '../services/api/detectionApi';
-import { getAlerts } from '../services/api/alertApi';
+import { DetectionService } from '../services/api/detectionApi';
 import DetectionSummaryCard from '../components/DetectionSummaryCard';
 import AlertSummaryCard from '../components/AlertSummaryCard';
-import type { DetectionItem } from '../services/api/detectionApi';
-import type { AlertItem } from '../services/api/alertApi';
+import { NotificationService } from '../services/api/notificationApi';
+import { detectionUtils } from '../utils/detectionUtils';
 
 const MainScreen = ({ navigation }: any) => {
-  const [detections, setDetections] = useState<DetectionItem[]>([]);
-  const [alerts, setAlerts] = useState<AlertItem[]>([]);
+  const [detections, setDetections] = useState<any[]>([]);
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [isDetecting, setIsDetecting] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
-    getDetections().then(setDetections);
-    getAlerts().then(setAlerts);
+    const detectionService = DetectionService.getInstance();
+    const notificationService = NotificationService.getInstance();
+    detectionService.getDetections().then((result: any) => {
+      console.log('Detection API response:', result);
+      const detectionData = result?.data || result || [];
+      setDetections(detectionData);
+    }).catch((error) => {
+      console.error('Failed to fetch detections:', error);
+      setDetections([]);
+    });
+    notificationService.getNotifications().then((result: any) => setNotifications(result ?? []));
   }, []);
 
-  return (
-    <ScrollView style={styles.container}>
-      <Text style={styles.sectionTitle}>최근 탐지</Text>
+  const handleImagePicker = async () => {
+    if (isDetecting) {
+      Alert.alert('탐지 중', '이미 객체 탐지가 진행 중입니다.');
+      return;
+    }
 
+    const imageUri = await detectionUtils.handleImagePicker();
+    if (imageUri) {
+      setSelectedImage(imageUri);
+    }
+  };
+
+  const handleStartDetection = async () => {
+    if (isDetecting) {
+      Alert.alert('탐지 중', '이미 객체 탐지가 진행 중입니다.');
+      return;
+    }
+
+    if (!selectedImage) {
+      console.log(detections)
+      Alert.alert('이미지 선택', '먼저 이미지를 선택해주세요.');
+      return;
+    }
+
+    setIsDetecting(true);
+    setIsUploading(true);
+
+    await detectionUtils.handleStartDetection(
+      selectedImage,
+      () => {
+        // 성공 시 콜백
+        setSelectedImage(null);
+        setIsDetecting(false);
+        setIsUploading(false);
+        // 탐지 목록 새로고침
+        const detectionService = DetectionService.getInstance();
+        detectionService.getDetections().then((result: any) => setDetections(result ?? []));
+      },
+      (error: string) => {
+        // 오류 시 콜백
+        Alert.alert('오류', error);
+        setIsDetecting(false);
+        setIsUploading(false);
+      }
+    );
+  };
+
+  const handleClearImage = () => {
+    setSelectedImage(null);
+  };
+
+  return (
+    <View style={styles.container}>
+      <View style={styles.detectionButtonContainer}>
+        <TouchableOpacity
+          style={[styles.detectionButton, isDetecting && styles.detectionButtonDisabled]}
+          onPress={handleImagePicker}
+          disabled={isDetecting}
+        >
+          <Text style={styles.detectionButtonText}>
+            {isDetecting ? '탐지 중...' : '이미지 선택'}
+          </Text>
+        </TouchableOpacity>
+
+        {selectedImage && (
+          <View style={styles.imagePreviewContainer}>
+            <Image source={{ uri: selectedImage }} style={styles.imagePreview} />
+            <View style={styles.imageActionsContainer}>
+              <TouchableOpacity
+                style={styles.startDetectionButton}
+                onPress={handleStartDetection}
+                disabled={isUploading}
+              >
+                {isUploading ? (
+                  <ActivityIndicator color="#fff" size="small" />
+                ) : (
+                  <Text style={styles.startDetectionButtonText}>탐지 시작</Text>
+                )}
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.clearImageButton}
+                onPress={handleClearImage}
+                disabled={isUploading}
+              >
+                <Text style={styles.clearImageButtonText}>취소</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+      </View>
+
+      <Text style={styles.sectionTitle}>최근 탐지</Text>
       <FlatList
-        data={detections.slice(0, 5)}
+        data={detections}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <DetectionSummaryCard
@@ -40,17 +139,9 @@ const MainScreen = ({ navigation }: any) => {
         contentContainerStyle={styles.listContainer}
       />
 
-      {/* 탐지 전체 보기 버튼 */}
-      <TouchableOpacity
-        onPress={() => navigation.navigate('Detection', { screen: 'DetectionList' })}
-        style={styles.moreButtonContainer}
-      >
-        <Text style={styles.moreButtonText}>탐지 전체 보기</Text>
-      </TouchableOpacity>
-
       <Text style={styles.sectionTitle}>최근 알림</Text>
       <FlatList
-        data={alerts.slice(0, 5)}
+        data={notifications}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <AlertSummaryCard
@@ -58,7 +149,7 @@ const MainScreen = ({ navigation }: any) => {
             onPress={() =>
               navigation.navigate('Detection', {
                 screen: 'Detail',
-                params: { id: item.detectionId },
+                params: { id: item.id },
               })
             }
           />
@@ -66,19 +157,7 @@ const MainScreen = ({ navigation }: any) => {
         scrollEnabled={false}
         contentContainerStyle={styles.alertListContainer}
       />
-
-      {/* 알림 전체 보기 버튼 */}
-      <TouchableOpacity
-        onPress={() =>
-          navigation.navigate('Detection', {
-            screen: 'AlertList',
-          })
-        }
-        style={styles.moreButtonContainer}
-      >
-        <Text style={styles.moreButtonText}>알림 전체 보기</Text>
-      </TouchableOpacity>
-    </ScrollView>
+    </View>
   );
 };
 

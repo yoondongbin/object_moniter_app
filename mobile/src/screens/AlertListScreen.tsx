@@ -1,22 +1,32 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList } from 'react-native';
 import styles from '../styles/AlertListScreen.styles';
-import { getAlerts, type AlertItem } from '../services/api/alertApi';
+import { NotificationService, type NotificationData } from '../services/api/notificationApi';
 import AlertSummaryCard from '../components/AlertSummaryCard';
 
 export default function AlertListScreen() {
-  const [alerts, setAlerts] = useState<AlertItem[]>([]);
+  const [notifications, setNotifications] = useState<NotificationData[]>([]);
 
   useEffect(() => {
-    getAlerts().then(setAlerts);
+    const loadNotifications = async () => {
+      try {
+        const response = await NotificationService.getInstance().getNotifications();
+        if (response.success && Array.isArray(response.data)) {
+          setNotifications(response.data);
+        }
+      } catch (error) {
+        console.error('알림 로드 실패:', error);
+      }
+    };
+    loadNotifications();
   }, []);
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>전체 알림 목록</Text>
       <FlatList
-        data={alerts}
-        keyExtractor={(item) => item.id}
+        data={notifications}
+        keyExtractor={(item) => item.id?.toString() || ''}
         renderItem={({ item }) => (
           <AlertSummaryCard item={item} onPress={() => {}} />
         )}

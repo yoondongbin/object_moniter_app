@@ -32,39 +32,39 @@ export const getApiConfig = () => {
 export const API_ENDPOINTS = {
   // 인증 관련
   AUTH: {
-    LOGIN: { path: '/api/auth/login', requiresAuth: false }, // POST
-    REGISTER: { path: '/api/auth/register', requiresAuth: false }, // POST
-    REFRESH: { path: '/api/auth/refresh', requiresAuth: true }, // POST
+    LOGIN: { path: '/api/auth/login/', requiresAuth: false }, // POST
+    REGISTER: { path: '/api/auth/register/', requiresAuth: false }, // POST
+    REFRESH: { path: '/api/auth/refresh/', requiresAuth: true }, // POST
   },
   
   // 객체 관련
   OBJECTS: {
-    LIST: { path: '/api/objects', requiresAuth: true }, // GET
-    DETAIL: (objectId: number) => ({ path: `/api/objects/${objectId}`, requiresAuth: true }), // GET
-    CREATE: { path: '/api/objects', requiresAuth: true }, // POST
-    UPDATE: (objectId: number) => ({ path: `/api/objects/${objectId}`, requiresAuth: true }), // PUT
-    DELETE: (objectId: number) => ({ path: `/api/objects/${objectId}`, requiresAuth: true }), // DELETE
-    SWITCH: (objectId: number) => ({ path: `/api/objects/${objectId}/status`, requiresAuth: true }), // PATCH
+    LIST: { path: '/api/objects/', requiresAuth: true }, // GET
+    DETAIL: (objectId: number) => ({ path: `/api/objects/${objectId}/`, requiresAuth: true }), // GET
+    CREATE: { path: '/api/objects/', requiresAuth: true }, // POST
+    UPDATE: (objectId: number) => ({ path: `/api/objects/${objectId}/`, requiresAuth: true }), // PUT
+    DELETE: (objectId: number) => ({ path: `/api/objects/${objectId}/`, requiresAuth: true }), // DELETE
+    SWITCH: (objectId: number) => ({ path: `/api/objects/${objectId}/status/`, requiresAuth: true }), // PATCH
   },
 
   // 객체 탐지 관련
   DETECTIONS: {
-    LIST: (objectId: number) => ({ path: `/api/objects/${objectId}/detections`, requiresAuth: true }), // GET
-    DETAIL: (objectId: number, detectionId: number) => ({ path: `/api/objects/${objectId}/detections/${detectionId}`, requiresAuth: true }), // GET
-    DETECT: (objectId: number) => ({ path: `/api/objects/${objectId}/detect`, requiresAuth: true}), // POST
-    UPDATE: (objectId: number, detectionId: number) => ({ path: `/api/objects/${objectId}/detections/${detectionId}`, requiresAuth: true }), // PUT
-    DELETE: (objectId: number, detectionId: number) => ({ path: `/api/objects/${objectId}/detections/${detectionId}`, requiresAuth: true }), // DELETE
-    STATS: (objectId: number) => ({ path: `/api/objects/${objectId}/detections/stats`, requiresAuth: true }), // GET
-    LOGS: (objectId: number) => ({ path: `/api/logs/${objectId}`, requiresAuth: true }), // GET
+    LIST: () => ({ path: `/api/objects/detections/`, requiresAuth: true }), // GET
+    DETAIL: (objectId: number, detectionId: number) => ({ path: `/api/objects/${objectId}/detections/${detectionId}/`, requiresAuth: true }), // GET
+    DETECT: (objectId: number) => ({ path: `/api/objects/${objectId}/detect/`, requiresAuth: true}), // POST
+    UPDATE: (objectId: number, detectionId: number) => ({ path: `/api/objects/${objectId}/detections/${detectionId}/`, requiresAuth: true }), // PUT
+    DELETE: (objectId: number, detectionId: number) => ({ path: `/api/objects/${objectId}/detections/${detectionId}/`, requiresAuth: true }), // DELETE
+    STATS: (objectId: number) => ({ path: `/api/objects/${objectId}/detections/stats/`, requiresAuth: true }), // GET
+    LOGS: (objectId: number) => ({ path: `/api/logs/${objectId}/`, requiresAuth: true }), // GET
   },
   
   // 알림 관련
   NOTIFICATIONS: {
-    LIST: { path: '/api/notifications', requiresAuth: true }, // GET
-    DETAIL: (notificationId: number) => ({ path: `/api/notifications/${notificationId}`, requiresAuth: true }), // GET
-    CHECK: (notificationId: number) => ({ path: `/api/notifications/${notificationId}/read`, requiresAuth: true }), // PUT
-    DELETE: (notificationId: number) => ({ path: `/api/notifications/${notificationId}`, requiresAuth: true }), // DELETE
-    SEND_INTERNAL: { path: '/api/notifications/send-internal', requiresAuth: false }, // POST
+    LIST: { path: '/api/notifications/', requiresAuth: true }, // GET
+    DETAIL: (notificationId: number) => ({ path: `/api/notifications/${notificationId}/`, requiresAuth: true }), // GET
+    CHECK: (notificationId: number) => ({ path: `/api/notifications/${notificationId}/read/`, requiresAuth: true }), // PUT
+    DELETE: (notificationId: number) => ({ path: `/api/notifications/${notificationId}/`, requiresAuth: true }), // DELETE
+    SEND_INTERNAL: { path: '/api/notifications/send-internal/', requiresAuth: false }, // POST
   },
   
 };

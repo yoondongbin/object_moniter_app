@@ -14,13 +14,13 @@ export default function DetectionSummaryCard({ item, onPress }: Props) {
     <TouchableOpacity style={styles.card} onPress={onPress}>
       {/* 썸네일 이미지 */}
       <Image
-        source={{ uri: resolveThumbnailUrl(item.thumbnail) }}
+        source={{ uri: resolveThumbnailUrl(item.image_path || '') }}
         style={styles.thumbnail}
         resizeMode="cover"
       />
 
       {/* 탐지 라벨 */}
-      <Text style={styles.label}>{item.label}</Text>
+      <Text style={styles.label}>{item.detection_type}</Text>
 
       {/* 정확도 및 위험도 */}
       <View style={styles.metaRow}>
@@ -28,19 +28,19 @@ export default function DetectionSummaryCard({ item, onPress }: Props) {
         <Text
           style={[
             styles.riskText,
-            item.riskLevel === '높음'
+            item.danger_level === '높음'
               ? styles.riskHigh
-              : item.riskLevel === '중간'
+              : item.danger_level === '중간'
               ? styles.riskMedium
               : styles.riskLow,
           ]}
         >
-          {item.riskLevel}
+          {item.danger_level}
         </Text>
       </View>
 
       {/* 탐지 시간 */}
-      <Text style={styles.time}>{item.time}</Text>
+      <Text style={styles.time}>{item.created_at}</Text>
     </TouchableOpacity>
   );
 }

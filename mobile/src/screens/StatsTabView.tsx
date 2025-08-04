@@ -1,8 +1,8 @@
 import React from 'react';
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
-import StatsByTimeScreen from '../screens/StatsByTimeScreen';
 import StatsByRiskScreen from '../screens/StatsByRiskScreen';
 import StatsByLabelScreen from '../screens/StatsByLabelScreen';
+import StatsScreen from '../screens/StatsScreen';
 
 const Tab = createMaterialTopTabNavigator();
 
@@ -17,7 +17,7 @@ export default function StatsTabView() {
         lazy: true, // 성능 최적화: 탭 이동 시에만 렌더링
       }}
     >
-      <Tab.Screen name="시간대별" component={StatsByTimeScreen} />
+      <Tab.Screen name="시간대별" component={StatsScreen} />
       <Tab.Screen name="위험 등급별" component={StatsByRiskScreen} />
       <Tab.Screen name="유형별" component={StatsByLabelScreen} />
     </Tab.Navigator>

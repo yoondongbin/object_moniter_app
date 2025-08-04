@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text } from 'react-native';
-import { getDetections, DetectionItem } from '../services/api/detectionApi';
+import { DetectionService, type DetectionItem } from '../services/api/detectionApi';
 import { PieChart } from 'react-native-chart-kit';
 import { Dimensions } from 'react-native';
 import styles from '../styles/StatsByLabelScreen.styles';
@@ -12,11 +12,12 @@ export default function StatsByLabelScreen() {
   const [detections, setDetections] = useState<DetectionItem[]>([]);
 
   useEffect(() => {
-    getDetections().then(setDetections);
+    const detectionService = DetectionService.getInstance();
+    detectionService.getDetections().then((result: any) => setDetections(result ?? []));
   }, []);
 
   const labelCounts = detections.reduce((acc, cur) => {
-    acc[cur.label] = (acc[cur.label] || 0) + 1;
+    acc[cur.detection_type] = (acc[cur.detection_type] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
 

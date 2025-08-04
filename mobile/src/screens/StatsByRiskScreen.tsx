@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text } from 'react-native';
-import { getDetections } from '../services/api/detectionApi';
-import { DetectionItem } from '../services/api/detectionApi';
+import { DetectionService, type DetectionItem } from '../services/api/detectionApi';
 import { PieChart } from 'react-native-chart-kit';
 import { Dimensions } from 'react-native';
 import styles from '../styles/StatsByRiskScreen.styles';
@@ -13,12 +12,13 @@ export default function StatsByRiskScreen() {
   const [detections, setDetections] = useState<DetectionItem[]>([]);
 
   useEffect(() => {
-    getDetections().then(setDetections);
+    const detectionService = DetectionService.getInstance();
+    detectionService.getDetections().then((result: any) => setDetections(result ?? []));
   }, []);
 
   const riskCounts = detections.reduce(
     (acc, cur) => {
-      acc[cur.riskLevel] = (acc[cur.riskLevel] || 0) + 1;
+      acc[cur.danger_level] = (acc[cur.danger_level] || 0) + 1;
       return acc;
     },
     {} as Record<string, number>
@@ -30,7 +30,7 @@ export default function StatsByRiskScreen() {
     낮음: '#4ECDC4',
   };
 
-  const chartData = Object.entries(riskCounts).map(([level, count], index) => ({
+  const chartData = Object.entries(riskCounts).map(([level, count]) => ({
     name: level,
     count,
     color: colors[level] || '#888',

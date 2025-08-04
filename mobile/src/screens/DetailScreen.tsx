@@ -1,23 +1,24 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, Image } from 'react-native';
 import { useRoute } from '@react-navigation/native';
-import { getDetectionById } from '../services/api/detectionApi';
-import type { DetectionItem } from '../services/api/detectionApi';
-import { getAlertById } from '../services/api/alertApi';
-import type { AlertItem } from '../services/api/alertApi';
+import { DetectionService, type DetectionItem } from '../services/api/detectionApi';
+import { NotificationService, type NotificationData } from '../services/api/notificationApi';
 import styles from '../styles/DetailScreen.styles';
 import { resolveThumbnailUrl } from '../utils/imageUtils';
 
 const DetailScreen = () => {
   const route = useRoute();
-  const { id } = route.params as { id: string };
+  const { id } = route.params as { id: number };
 
   const [detection, setDetection] = useState<DetectionItem | null>(null);
-  const [alert, setAlert] = useState<AlertItem | null>(null);
-
+  const [notification, setNotification] = useState<NotificationData | null>(null);
+  
   useEffect(() => {
-    getDetectionById(id).then((result) => setDetection(result ?? null));
-    getAlertById(id).then((result) => setAlert(result ?? null));
+    const detectionService = DetectionService.getInstance();
+    const notificationService = NotificationService.getInstance();
+
+    detectionService.getDetectionById(id).then((result: any) => setDetection(result ?? null));
+    notificationService.getNotificationById(id).then((result: any) => setNotification(result ?? null));
   }, [id]);
 
   if (!detection) {
@@ -32,25 +33,23 @@ const DetailScreen = () => {
     <View style={styles.container}>
       <Text style={styles.sectionTitle}>탐지 정보</Text>
       <Image
-        source={{ uri: resolveThumbnailUrl(detection.thumbnail) }}
+        source={{ uri: resolveThumbnailUrl(detection.image_path || '') }}
         style={styles.thumbnail}
       />
       <View style={styles.card}>
-        <Text style={styles.label}>유형: <Text style={styles.value}>{detection.label}</Text></Text>
-        <Text style={styles.label}>시간: <Text style={styles.value}>{detection.time}</Text></Text>
+        <Text style={styles.label}>유형: <Text style={styles.value}>{detection.detection_type}</Text></Text>
+        <Text style={styles.label}>시간: <Text style={styles.value}>{detection.updated_at}</Text></Text>
         <Text style={styles.label}>정확도: <Text style={styles.value}>{detection.confidence.toFixed(1)}%</Text></Text>
-        <Text style={styles.label}>위험도: <Text style={styles.value}>{detection.riskLevel}</Text></Text>
-        <Text style={styles.label}>위치: <Text style={styles.value}>{detection.location}</Text></Text>
-        <Text style={styles.label}>객체 수: <Text style={styles.value}>{detection.objectCount}개</Text></Text>
+        <Text style={styles.label}>위험도: <Text style={styles.value}>{detection.danger_level}</Text></Text>
       </View>
 
-      {alert && (
+      {notification && (
         <>
           <Text style={styles.sectionTitle}>알림 정보</Text>
           <View style={styles.card}>
-            <Text style={styles.label}>유형: <Text style={styles.value}>{alert.type}</Text></Text>
-            <Text style={styles.label}>시간: <Text style={styles.value}>{alert.time}</Text></Text>
-            <Text style={styles.label}>심각도: <Text style={styles.value}>{alert.severity}</Text></Text>
+            <Text style={styles.label}>유형: <Text style={styles.value}>{notification.type}</Text></Text>
+            <Text style={styles.label}>시간: <Text style={styles.value}>{notification.created_at}</Text></Text>
+            <Text style={styles.label}>심각도: <Text style={styles.value}>{notification.type}</Text></Text>
           </View>
         </>
       )}

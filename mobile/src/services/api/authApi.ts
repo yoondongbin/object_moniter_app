@@ -4,28 +4,26 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // 인증 관련 타입 정의
 export type LoginRequest = {
-  email: string;
+  username: string;
   password: string;
 };
 
 export type RegisterRequest = {
-  email: string;
-  password: string;
   name: string;
+  password: string;
+  email: string;
 };
 
 export type AuthResponse = {
-  success: boolean;
-  data: {
-    token: string;
-    user: {
-      id: number;
-      username: string;
-      email: string;
-      name: string;
-      created_at: string;
-      updated_at: string;
-    };
+  access_token: string;
+  refresh_token: string;
+  user: {
+    id: number;
+    username: string;
+    email: string;
+    name: string;
+    created_at: string;
+    updated_at: string;
   };
   message?: string;
 };
@@ -51,12 +49,21 @@ export class AuthService {
         API_ENDPOINTS.AUTH.LOGIN.path,
         credentials
       );
-      
+
+      console.log('로그인 응답:', response);
+
       // 로그인 성공 시에만 토큰 저장
-      if (response.data.token) {
-        await this.saveToken(response.data.token);
+      if (response.access_token) {
+        console.log('토큰 저장 중:', response.access_token.substring(0, 20) + '...');
+        await this.saveToken(response.access_token);
+      } else {
+        console.error('access_token이 없습니다:', response);
       }
-      
+      if (response.refresh_token) {
+        console.log('refresh_token 저장 중:', response.refresh_token.substring(0, 20) + '...');
+        await AsyncStorage.setItem('refreshToken', response.refresh_token);
+      }
+
       return response;
     } catch (error) {
       console.error('❌ 로그인 실패:', error);
@@ -73,8 +80,8 @@ export class AuthService {
       );
       
       // 회원가입 성공 시에도 토큰 저장 (자동 로그인)
-      if (response.data.token) {
-        await this.saveToken(response.data.token);
+      if (response.access_token) {
+        await this.saveToken(response.access_token);
       }
       
       return response;
@@ -87,14 +94,23 @@ export class AuthService {
   // 토큰 갱신 API
   async refreshToken(): Promise<AuthResponse> {
     try {
+      const refreshToken = await AsyncStorage.getItem('refreshToken');
+    
+      if (!refreshToken) {
+        throw new Error('Refresh token not found');
+      }
       const response = await apiClient.post<AuthResponse>(
         API_ENDPOINTS.AUTH.REFRESH.path,
-        {}
+        {
+          refresh_token: refreshToken
+        }
       );
       
-      // 토큰 갱신 성공 시 새 토큰 저장
-      if (response.data.token) {
-        await this.saveToken(response.data.token);
+      if (response.access_token) {
+        await this.saveToken(response.access_token);
+      }
+      if (response.refresh_token) {
+        await AsyncStorage.setItem('refreshToken', response.refresh_token);
       }
       
       return response;
@@ -140,8 +156,8 @@ export class AuthService {
   // 토큰 저장 헬퍼 함수
   private async saveToken(token: string): Promise<void> {
     try {
-      await AsyncStorage.setItem('accessToken', token);
       this.token = token;
+      await AsyncStorage.setItem('accessToken', token);
       console.log('✅ 토큰이 성공적으로 저장되었습니다.');
     } catch (error) {
       console.error('❌ 토큰 저장 실패:', error);

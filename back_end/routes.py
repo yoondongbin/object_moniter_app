@@ -182,6 +182,8 @@ def get_object(object_id):
     
     return jsonify(obj.to_dict())
 
+
+
 @objects_bp.route('/<int:object_id>', methods=['PUT'])
 @jwt_required()
 def update_object(object_id):
@@ -358,10 +360,8 @@ def update_object_status(object_id):
 @objects_bp.route('/<int:object_id>/detect', methods=['POST'])
 @jwt_required()
 def process_detection(object_id):
-    """객체 탐지 처리 (실제 카메라 프레임 처리)"""
+    """객체 탐지 처리 (Base64 이미지 데이터 처리)"""
 
-    data = request.get_json()
-    image_path = data.get('image_path')
     user_id = get_jwt_identity()
     obj = Object.query.filter_by(id=object_id, user_id=user_id).first()
     
@@ -369,48 +369,66 @@ def process_detection(object_id):
         return jsonify({'error': 'Object not found'}), 404
     
     try:
-        # 프레임 데이터 받기 (실제로는 카메라에서 받음)
-        data = use_detection_model.detect_object(image_path)
-        frame_data = data.get('image')  # base64 인코딩된 이미지
+        data = request.get_json()
+        image_data = data.get('image_data')
+        image_format = data.get('image_format', 'jpeg')
         
-        if not frame_data:
-            return jsonify({'error': 'Frame data is required'}), 400
+        if not image_data:
+            return jsonify({'error': 'Image data is required'}), 400
         
-        # Base64 이미지를 numpy 배열로 변환
+        # Base64 이미지를 임시 파일로 저장
         import base64
         import cv2
         import numpy as np
-        
-        # Base64 데이터에서 이미지 부분 추출
-        if frame_data.startswith('data:image'):
-            # "data:image/jpeg;base64," 부분 제거
-            frame_data = frame_data.split(',')[1]
+        import tempfile
+        import os
         
         # Base64 디코딩
-        image_data = base64.b64decode(frame_data)
-        nparr = np.frombuffer(image_data, np.uint8)
+        image_bytes = base64.b64decode(image_data)
+        nparr = np.frombuffer(image_bytes, np.uint8)
         frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
         
         if frame is None:
             return jsonify({'error': 'Invalid image data'}), 400
         
-        new_detection_result = {
-            'image': frame_data,
-            'confidence': data.get('confidence'),
-            'class': data.get('class'),
-            'detected_object': data.get('detected_object'),
-            'bbox_coordinates': data.get('bbox_coordinates')
-        }
-
-        # 탐지 서비스 호출
-        from detection_service import detection_service
-        result = detection_service.process_frame(new_detection_result, object_id, user_id)
+        # 임시 파일로 저장
+        temp_dir = tempfile.gettempdir()
+        temp_filename = f"temp_detection_{object_id}.jpg"
+        temp_path = os.path.join(temp_dir, temp_filename)
         
-        return jsonify({
-            'message': '탐지 완료',
-            'result': result,
-            'object': obj.to_dict()
-        })
+        try:
+            # 이미지를 임시 파일로 저장
+            cv2.imwrite(temp_path, frame)
+            
+            # 기존의 detect_object 메서드 사용
+            detection_result = use_detection_model.detect_object(temp_path)
+            
+            if not detection_result:
+                return jsonify({'error': 'Detection failed'}), 500
+            
+            # 탐지 결과를 데이터베이스에 저장
+            new_detection_result = {
+                'image': image_data,  # Base64 데이터 저장
+                'confidence': detection_result.get('confidence', 0.0),
+                'class': detection_result.get('class', 'unknown'),
+                'detected_object': detection_result.get('detected_object', ''),
+                'bbox_coordinates': detection_result.get('bbox_coordinates', {})
+            }
+
+            # 탐지 서비스 호출
+            from detection_service import detection_service
+            result = detection_service.process_frame(new_detection_result, object_id, user_id)
+            
+            return jsonify({
+                'message': '탐지 완료',
+                'result': result,
+                'object': obj.to_dict()
+            })
+            
+        finally:
+            # 임시 파일 삭제
+            if os.path.exists(temp_path):
+                os.remove(temp_path)
         
     except Exception as e:
         return jsonify({'error': f'탐지 처리 오류: {str(e)}'}), 500
@@ -464,22 +482,27 @@ def process_detection(object_id):
 #         return jsonify({'error': f'Manual detection error: {str(e)}'}), 500
 
 # 탐지 결과 관련 라우트
-@objects_bp.route('/<int:object_id>/detections', methods=['GET'])
+@objects_bp.route('/detections', methods=['GET'])
 @jwt_required()
-def get_detection_results(object_id):
-    """객체의 탐지 결과 조회"""
+def get_all_user_detections():
+    """사용자의 모든 객체 탐지 정보 조회"""
     user_id = get_jwt_identity()
-    obj = Object.query.filter_by(id=object_id, user_id=user_id).first()
     
-    if not obj:
-        return jsonify({'error': 'Object not found'}), 404
+    objects = Object.query.filter_by(user_id=user_id).all()
     
-    # 최근 100개의 탐지 결과 조회
-    detections = DetectionResult.query.filter_by(object_id=object_id)\
-        .order_by(DetectionResult.created_at.desc())\
-        .limit(100).all()
+    all_detections = []
+    for obj in objects:
+        detections = DetectionResult.query.filter_by(object_id=obj.id).all()
+        for detection in detections:
+            detection_dict = detection.to_dict()
+            all_detections.append(detection_dict)
     
-    return jsonify([detection.to_dict() for detection in detections])
+    all_detections.sort(key=lambda x: x['created_at'], reverse=True)
+    
+    return jsonify({
+        'success': True,
+        'data': all_detections
+    })
 
 @objects_bp.route('/<int:object_id>/detections/<int:detection_id>', methods=['GET'])
 @jwt_required()

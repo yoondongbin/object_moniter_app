@@ -1,10 +1,10 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import styles from '../styles/AlertSummaryCard.styles';
-import { AlertItem } from '../services/api/alertApi';
+import { NotificationData } from '../services/api/notificationApi';
 
 type Props = {
-  item: AlertItem;
+  item: NotificationData;
   onPress: () => void;
 };
 
@@ -16,11 +16,11 @@ export default function AlertSummaryCard({ item, onPress }: Props) {
           <Text 
             style={[
               styles.severity,
-              item.severity === '높음' ? styles.high : item.severity === '중간' ? styles.medium : styles.low,
+              item.type === 'warning' ? styles.high : item.type === '중간' ? styles.medium : styles.low,
             ]}
-          >{item.severity}</Text>
+          >{item.type}</Text>
         </View>
-        <Text style={styles.time}>{item.time}</Text>
+        <Text style={styles.time}>{item.created_at}</Text>
       </TouchableOpacity>
     );
   }

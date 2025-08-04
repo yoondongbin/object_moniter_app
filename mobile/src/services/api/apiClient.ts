@@ -28,15 +28,27 @@ class ApiClient {
           requestConfig.url?.includes(endpoint)
         );
         
+        console.log('요청 URL:', requestConfig.url);
+        console.log('인증 필요:', requiresAuth);
+
         // 인증이 필요한 경우에만 토큰 추가
         if (requiresAuth) {
           const token = await AsyncStorage.getItem('accessToken');
+          console.log('저장된 토큰:', token ? token.substring(0, 20) + '...' : '없음');
           if (token) {
             requestConfig.headers.Authorization = `Bearer ${token}`;
+          } else {
+            console.error('토큰이 없습니다.');
           }
         }
+
+        console.log('최종 요청 설정:', {
+          method: requestConfig.method,
+          url: requestConfig.url,
+          headers: requestConfig.headers
+        });
+        console.log('=== 요청 인터셉터 끝 ===');
         
-        console.log('API Request:', requestConfig.method?.toUpperCase(), requestConfig.url);
         return requestConfig;
       },
       (error) => {

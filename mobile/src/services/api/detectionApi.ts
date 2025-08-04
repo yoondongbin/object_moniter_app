@@ -2,20 +2,49 @@
 import apiClient from './apiClient';
 import { API_ENDPOINTS } from '../../config/apiConfig';
 
+export type DetectionItem = {
+  id?: number;
+  object_id: number;
+  detection_type: string;
+  object_class: string;
+  confidence: number;
+  bbox_x: number;
+  bbox_y: number;
+  bbox_width: number;
+  bbox_height: number;
+  danger_level: 'safe' | 'low' | 'medium' | 'high';
+  image_path?: string;
+  created_at?: string;
+  updated_at?: string;
+};
+
 export class DetectionService {
+  private static instance: DetectionService;
   private objectId: number;
 
-  constructor(objectId: number) {
+  private constructor(objectId: number = 0) {
+    this.objectId = objectId;
+  }
+
+  public static getInstance(): DetectionService {
+    if (!DetectionService.instance) {
+      DetectionService.instance = new DetectionService();
+    }
+    return DetectionService.instance;
+  }
+
+  // objectId 설정 메서드 추가
+  public setObjectId(objectId: number): void {
     this.objectId = objectId;
   }
 
   // 특정 객체의 탐지 목록 불러오기
   async getDetections(): Promise<any> {
     try {
-      const response = await apiClient.get(API_ENDPOINTS.DETECTIONS.LIST(this.objectId).path);
+      const response = await apiClient.get(API_ENDPOINTS.DETECTIONS.LIST().path);
       return response;
     } catch (error) {
-      console.error(`Failed to fetch detections for object ${this.objectId}:`, error);
+      console.error(`Failed to fetch detections:`, error);
       throw error;
     }
   }
@@ -92,18 +121,15 @@ export class DetectionService {
     }
   }
 
-  // 객체 ID 변경
-  setObjectId(newObjectId: number): void {
-    this.objectId = newObjectId;
-  }
-
   // 현재 객체 ID 조회
   getObjectId(): number {
     return this.objectId;
   }
+  
 }
 
 // 팩토리 함수 (편의용)
-export const createDetectionService = (objectId: number): DetectionService => {
-  return new DetectionService(objectId);
+export const createDetectionService = (): DetectionService => {
+  const service = DetectionService.getInstance();
+  return service;
 };

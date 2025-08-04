@@ -1,11 +1,12 @@
 import apiClient from './apiClient';
 import { API_ENDPOINTS } from '../../config/apiConfig';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export type NotificationData = {
   id?: number;
   title: string;
   message: string;
-  type: 'info' | 'warning' | 'error' | 'success';
+  type: string;
   is_read?: boolean;
   created_at?: string;
   user_id?: number;
@@ -33,6 +34,12 @@ export class NotificationService {
   // 알림 목록 조회
   async getNotifications(): Promise<NotificationResponse> {
     try {
+      const token = await AsyncStorage.getItem('accessToken');
+      console.log('알림 API 호출 전 토큰 확인:', token ? token.substring(0, 20) + '...' : '없음');
+      
+      if (!token) {
+        throw new Error('토큰이 없습니다');
+      }
       const response = await apiClient.get<NotificationResponse>(API_ENDPOINTS.NOTIFICATIONS.LIST.path);
       return response;
     } catch (error) {
