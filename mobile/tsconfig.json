@@ -1,5 +1,4 @@
 {
-  "extends": "@react-native/typescript-config/tsconfig.json",
   "compilerOptions": {
     "target": "esnext",
     "lib": ["esnext"],
@@ -15,10 +14,10 @@
     "noEmit": true,
     "jsx": "react-jsx",
     "baseUrl": ".",
+    "typeRoots": ["./node_modules/@types", "./src/types"],
     "paths": {
       "*": ["node_modules/*", "src/*"]
-    },
-    "types": ["react-native", "jest", "node"]
+    }
   },
   "include": [
     "src/**/*",

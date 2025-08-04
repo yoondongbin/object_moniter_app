@@ -9,9 +9,21 @@ from ultralytics import YOLO
 class Use_detection_model:
 
     def __init__(self):
-        self.model = YOLO('yolov8n.pt')
-        self.image_folder = '/Users/yunseong/Desktop/React_native/Object_monitor/object_moniter_app/back_end/image'
-        self.png_files = [f for f in os.listdir(self.image_folder) if f.endswith('.png')]
+        # 현재 파일 위치 기준 경로 설정
+        current_dir = os.path.dirname(__file__)
+        self.image_folder = os.path.join(current_dir, "image")
+        self.model_path = os.path.join(current_dir, "yolov8n.pt")
+        
+        # yolo 모델 로드
+        self.model = YOLO(self.model_path)
+        
+        # 이미지 폴더 내 png 파일 목록
+        if not os.path.exists(self.image_folder):
+            print(f"이미지 폴더가 존재 하지 않습니다: {self.image_folder}")
+            self.png_files = []
+        else:
+            self.png_files = [f for f in os.listdir(self.image_folder) if f.endswith('.png')]
+        
         self.class_name = ['high_danger', 'medium_danger', 'low_danger']
         
     def get_random_image(self):
