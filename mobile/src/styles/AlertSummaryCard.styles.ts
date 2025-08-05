@@ -1,13 +1,19 @@
 import { StyleSheet } from 'react-native';
+import { Colors } from './colors';
 
 export default StyleSheet.create({
   card: {
-    backgroundColor: '#fff5f5',
-    borderColor: '#ff9999',
-    borderWidth: 1,
-    borderRadius: 10,
-    padding: 12,
+    backgroundColor: Colors.white,
+    borderRadius: 12,
+    padding: 16,
     marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 4,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   row: {
     flexDirection: 'row',
@@ -16,25 +22,25 @@ export default StyleSheet.create({
   },
   type: {
     fontSize: 15,
-    fontWeight: 'bold',
-    color: '#d93025',
+    fontWeight: '600',
+    color: Colors.textPrimary,
   },
   severity: {
     fontSize: 12,
-    fontWeight: 'bold',
+    fontWeight: '600',
   },
   high: {
-    color: '#d93025',
+    color: Colors.danger,
   },
   medium: {
-    color: '#f9ab00',
+    color: Colors.warning,
   },
   low: {
-    color: '#188038',
+    color: Colors.success,
   },
   time: {
     fontSize: 12,
-    color: '#666',
-    marginTop: 6,
+    color: Colors.textLight,
+    marginTop: 8,
   },
 });

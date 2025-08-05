@@ -1,20 +1,66 @@
 import { StyleSheet } from 'react-native';
+import { Colors } from './colors';
 
 const DetectionListScreenStyles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
-    paddingTop: 20,
+    backgroundColor: Colors.background,
   },
   title: {
     fontSize: 22,
-    fontWeight: 'bold',
+    fontWeight: '600',
     paddingHorizontal: 16,
+    paddingTop: 20,
     marginBottom: 12,
+    color: Colors.textPrimary,
+  },
+  subtitle: {
+    fontSize: 14,
+    color: Colors.textSecondary,
+    paddingHorizontal: 16,
+    marginBottom: 16,
   },
   listContainer: {
     paddingHorizontal: 16,
     paddingBottom: 20,
+  },
+  
+  // 빈 상태 카드
+  emptyContainer: {
+    backgroundColor: Colors.white,
+    marginHorizontal: 16,
+    marginTop: 20,
+    padding: 40,
+    borderRadius: 16,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 4,
+    borderWidth: 2,
+    borderColor: Colors.border,
+    borderStyle: 'dashed',
+  },
+  emptyTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  emptySubtitle: {
+    fontSize: 16,
+    color: Colors.textLight,
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: 8,
+  },
+  emptyHint: {
+    fontSize: 14,
+    color: Colors.textLight,
+    textAlign: 'center',
+    fontStyle: 'italic',
   },
 });
 

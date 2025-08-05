@@ -28,9 +28,9 @@ export default function DetectionSummaryCard({ item, onPress }: Props) {
         <Text
           style={[
             styles.riskText,
-            item.danger_level === '높음'
+            item.danger_level === 'high'
               ? styles.riskHigh
-              : item.danger_level === '중간'
+              : item.danger_level === 'medium'
               ? styles.riskMedium
               : styles.riskLow,
           ]}
