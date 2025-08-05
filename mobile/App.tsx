@@ -14,8 +14,8 @@ export default function App() {
   const autoLogin = async () => {
     try {
       const response = await authService.login({
-        username: 'myuser',  // email 대신 username 사용
-        password: 'mypassword123'
+        username: 'testuser',  // email 대신 username 사용
+        password: 'test123'
       });
       console.log(response);
       // response.data.token 대신 response.data.access_token 사용

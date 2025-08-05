@@ -7,7 +7,7 @@ import tempfile
 from datetime import datetime
 from flask_socketio import emit
 from models import db, Object, MonitoringLog, Notification, DetectionResult
-from routes import create_alert_notification
+from utils import create_alert_notification
 from image_service import image_service
 
 
