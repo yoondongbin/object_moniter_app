@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, Alert, ActivityIndicator, ScrollView, Platform } from 'react-native';
 import styles from '../styles/MainScreen.styles';
 import { DetectionService } from '../services/api/detectionApi';
 import DetectionSummaryCard from '../components/DetectionSummaryCard';
@@ -51,7 +51,28 @@ const MainScreen = ({ navigation }: any) => {
   };
 
   return (
-    <View style={styles.container}>
+    <ScrollView 
+      style={styles.container} 
+      contentContainerStyle={styles.scrollContainer}
+      showsVerticalScrollIndicator={false}
+      nestedScrollEnabled={true}
+      keyboardShouldPersistTaps="handled"
+      // iOS 바운스 효과 완전 비활성화
+      bounces={false}
+      alwaysBounceVertical={false}
+      alwaysBounceHorizontal={false}
+      // Android 오버스크롤 효과 비활성화
+      overScrollMode="never"
+      // iOS 콘텐츠 인셋 조정 비활성화
+      contentInsetAdjustmentBehavior={Platform.OS === 'ios' ? 'never' : undefined}
+      automaticallyAdjustContentInsets={false}
+      // 스크롤 성능 최적화
+      scrollEventThrottle={16}
+      removeClippedSubviews={true}
+      // 추가 스크롤 제어
+      directionalLockEnabled={true}
+      pagingEnabled={false}
+    >
       {/* 객체 탐지 카드 */}
       <View style={styles.imageSelectionCard}>
         <TouchableOpacity
@@ -71,7 +92,10 @@ const MainScreen = ({ navigation }: any) => {
       <View style={styles.sectionContainer}>
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>최근 탐지</Text>
-          <TouchableOpacity style={styles.moreButton}>
+          <TouchableOpacity 
+            style={styles.moreButton}
+            onPress={() => navigation.navigate('Detection', { screen: 'DetectionList' })}
+          >
             <Text style={styles.moreButtonText}>더보기</Text>
           </TouchableOpacity>
         </View>
@@ -79,7 +103,7 @@ const MainScreen = ({ navigation }: any) => {
         {detections.length > 0 ? (
           <View style={styles.sectionCard}>
             <FlatList
-              data={detections}
+              data={detections.slice(0, 5)}
               keyExtractor={(item) => item.id}
               renderItem={({ item }) => (
                 <DetectionSummaryCard
@@ -95,6 +119,10 @@ const MainScreen = ({ navigation }: any) => {
               horizontal
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.listContainer}
+              scrollEnabled={true}
+              nestedScrollEnabled={false}
+              bounces={false}
+              overScrollMode="never"
             />
           </View>
         ) : (
@@ -109,7 +137,10 @@ const MainScreen = ({ navigation }: any) => {
       <View style={styles.sectionContainer}>
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>최근 알림</Text>
-          <TouchableOpacity style={styles.moreButton}>
+          <TouchableOpacity 
+            style={styles.moreButton}
+            onPress={() => navigation.navigate('Detection', { screen: 'AlertList' })}
+          >
             <Text style={styles.moreButtonText}>더보기</Text>
           </TouchableOpacity>
         </View>
@@ -117,7 +148,7 @@ const MainScreen = ({ navigation }: any) => {
         {notifications.length > 0 ? (
           <View style={styles.sectionCard}>
             <FlatList
-              data={notifications}
+              data={notifications.slice(0, 5)}
               keyExtractor={(item) => item.id}
               renderItem={({ item }) => (
                 <AlertSummaryCard
@@ -131,6 +162,9 @@ const MainScreen = ({ navigation }: any) => {
                 />
               )}
               scrollEnabled={false}
+              nestedScrollEnabled={false}
+              bounces={false}
+              overScrollMode="never"
             />
           </View>
         ) : (
@@ -140,7 +174,7 @@ const MainScreen = ({ navigation }: any) => {
           </View>
         )}
       </View>
-    </View>
+    </ScrollView>
   );
 };
 

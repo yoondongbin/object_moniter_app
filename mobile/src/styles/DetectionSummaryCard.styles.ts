@@ -1,15 +1,20 @@
 import { StyleSheet, Dimensions } from 'react-native';
 import { Colors } from './colors';
 
-const screenWidth = Dimensions.get('window').width;
+// 상수 정의 - 유지보수성 향상
+const SCREEN_WIDTH = Dimensions.get('window').width;
+const CARD_HORIZONTAL_MARGIN = 16;
+const GRID_CONTAINER_PADDING = 48; // 좌우 패딩 + 마진 총합
+const GRID_COLUMNS = 2;
+const HORIZONTAL_CARD_WIDTH_RATIO = 0.42;
 
 export default StyleSheet.create({
   card: {
-    width: screenWidth * 0.44,
+    width: SCREEN_WIDTH * HORIZONTAL_CARD_WIDTH_RATIO,
     backgroundColor: Colors.white,
     borderRadius: 16,
     padding: 16,
-    marginRight: 16,
+    marginRight: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
@@ -58,5 +63,15 @@ export default StyleSheet.create({
     fontSize: 11,
     color: Colors.textLight,
     marginTop: 8,
+  },
+  
+  // 그리드 레이아웃용 스타일 - 2열 그리드에 최적화
+  gridCard: {
+    width: (SCREEN_WIDTH - GRID_CONTAINER_PADDING) / GRID_COLUMNS,
+    marginRight: 0,
+    marginBottom: CARD_HORIZONTAL_MARGIN,
+  },
+  lastInRow: {
+    marginRight: 0,
   },
 });
