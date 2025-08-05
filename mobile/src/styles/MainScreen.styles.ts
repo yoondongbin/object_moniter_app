@@ -6,6 +6,11 @@ export default StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.background,
   },
+  scrollContainer: {
+    flexGrow: 1,
+    paddingBottom: 32,
+    minHeight: '100%',
+  },
   
   // 이미지 선택 카드
   imageSelectionCard: {
@@ -130,6 +135,7 @@ export default StyleSheet.create({
   // 리스트
   listContainer: {
     paddingBottom: 8,
+    paddingLeft: 4,
   },
   
   // 빈 상태 카드

@@ -20,13 +20,19 @@ const DetectionListScreenStyles = StyleSheet.create({
     paddingHorizontal: 16,
     marginBottom: 16,
   },
-  listContainer: {
-    paddingHorizontal: 16,
+  // 그리드 레이아웃용 스타일
+  gridListContainer: {
+    paddingHorizontal: 8,
     paddingBottom: 20,
   },
+  gridRow: {
+    justifyContent: 'space-between',
+    paddingHorizontal: 8,
+    marginBottom: 12,
+  },
   
-  // 빈 상태 카드
-  emptyContainer: {
+  // 빈 상태 관련 스타일
+  emptyStateContainer: {
     backgroundColor: Colors.white,
     marginHorizontal: 16,
     marginTop: 20,
@@ -42,21 +48,21 @@ const DetectionListScreenStyles = StyleSheet.create({
     borderColor: Colors.border,
     borderStyle: 'dashed',
   },
-  emptyTitle: {
+  emptyStateTitle: {
     fontSize: 20,
     fontWeight: '600',
     color: Colors.textSecondary,
     textAlign: 'center',
     marginBottom: 12,
   },
-  emptySubtitle: {
+  emptyStateDescription: {
     fontSize: 16,
     color: Colors.textLight,
     textAlign: 'center',
     lineHeight: 24,
     marginBottom: 8,
   },
-  emptyHint: {
+  emptyStateHint: {
     fontSize: 14,
     color: Colors.textLight,
     textAlign: 'center',

@@ -4,6 +4,7 @@ import { useRoute } from '@react-navigation/native';
 import { DetectionService, type DetectionItem } from '../services/api/detectionApi';
 import { NotificationService, type NotificationData } from '../services/api/notificationApi';
 import styles from '../styles/DetailScreen.styles';
+import { formatDateTime } from '../utils/dateUtils';
 
 const DetailScreen = () => {
   const route = useRoute();
@@ -37,7 +38,7 @@ const DetailScreen = () => {
       />
       <View style={styles.card}>
         <Text style={styles.label}>유형: <Text style={styles.value}>{detection.detection_type}</Text></Text>
-        <Text style={styles.label}>시간: <Text style={styles.value}>{detection.created_at}</Text></Text>
+        <Text style={styles.label}>시간: <Text style={styles.value}>{formatDateTime(detection.created_at)}</Text></Text>
         <Text style={styles.label}>정확도: <Text style={styles.value}>{(Number(detection.confidence)*100).toFixed(1)}%</Text></Text>
         <Text style={styles.label}>위험도: <Text style={styles.value}>{detection.danger_level}</Text></Text>
       </View>
@@ -48,7 +49,7 @@ const DetailScreen = () => {
           <View style={styles.card}>
             <Text style={styles.label}>유형: <Text style={styles.value}>{notification.title}</Text></Text>
             <Text style={styles.label}>메세지: <Text style={styles.value}>{notification.message}</Text></Text>
-            <Text style={styles.label}>시간: <Text style={styles.value}>{notification.created_at}</Text></Text>
+            <Text style={styles.label}>시간: <Text style={styles.value}>{formatDateTime(notification.created_at)}</Text></Text>
             <Text style={styles.label}>심각도: <Text style={styles.value}>{notification.notification_type}</Text></Text>
           </View>
         </>

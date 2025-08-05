@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import styles from '../styles/AlertSummaryCard.styles';
 import { NotificationData } from '../services/api/notificationApi';
+import { formatDateTime } from '../utils/dateUtils';
 
 type Props = {
   item: NotificationData;
@@ -20,7 +21,7 @@ export default function AlertSummaryCard({ item, onPress }: Props) {
             ]}
           >{item.notification_type}</Text>
         </View>
-        <Text style={styles.time}>{item.created_at}</Text>
+        <Text style={styles.time}>{formatDateTime(item.created_at)}</Text>
       </TouchableOpacity>
     );
   }

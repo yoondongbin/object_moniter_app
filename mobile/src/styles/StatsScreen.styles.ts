@@ -6,19 +6,37 @@ const StatsScreenStyles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.background,
   },
+  
+  // 고정 헤더
+  header: {
+    backgroundColor: Colors.background,
+    paddingTop: 20,
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+    zIndex: 1,
+  },
   title: {
     fontSize: 22,
     fontWeight: '600',
     paddingHorizontal: 16,
-    paddingTop: 20,
-    marginBottom: 16,
+    marginBottom: 8,
     color: Colors.textPrimary,
   },
   subtitle: {
     fontSize: 14,
     color: Colors.textSecondary,
     paddingHorizontal: 16,
-    marginBottom: 16,
+    marginBottom: 8,
+  },
+  
+  // 스크롤 영역
+  scrollContainer: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 32,
+    flexGrow: 1,
   },
   
   // 빈 상태 카드
@@ -59,7 +77,123 @@ const StatsScreenStyles = StyleSheet.create({
     lineHeight: 20,
   },
   
-  // 주간 통계 영역 (카드 스타일 강화)
+  // 날짜 선택 영역
+  dateRangeContainer: {
+    backgroundColor: Colors.white,
+    marginHorizontal: 16,
+    marginBottom: 16,
+    padding: 16,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+
+  // 로딩 상태
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+  },
+  loadingText: {
+    fontSize: 16,
+    color: Colors.textSecondary,
+    marginTop: 16,
+    fontWeight: '500',
+  },
+
+  // 차트 영역 (대시보드 스타일)
+  chartContainer: {
+    backgroundColor: Colors.white,
+    marginHorizontal: 16,
+    marginBottom: 16,
+    padding: 20,
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 5,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  chartTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: Colors.textPrimary,
+    marginBottom: 4,
+  },
+  chartSubtitle: {
+    fontSize: 14,
+    color: Colors.textSecondary,
+    marginBottom: 20,
+    fontWeight: '500',
+  },
+  
+  // 빈 차트 상태
+  emptyChartContainer: {
+    paddingVertical: 60,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyChartText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: Colors.textSecondary,
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  emptyChartSubtext: {
+    fontSize: 14,
+    color: Colors.textLight,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+
+  // 통계 요약 카드
+  summaryContainer: {
+    flexDirection: 'row',
+    marginHorizontal: 16,
+    marginBottom: 20,
+    gap: 12,
+  },
+  summaryCard: {
+    flex: 1,
+    backgroundColor: Colors.white,
+    padding: 20,
+    borderRadius: 16,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    elevation: 4,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  summaryTitle: {
+    fontSize: 14,
+    color: Colors.textSecondary,
+    marginBottom: 8,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  summaryValue: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: Colors.textPrimary,
+    textAlign: 'center',
+  },
+  dangerValue: {
+    color: '#EF4444', // 빨간색
+  },
+
+  // 레거시 (호환성 유지)
   weekContainer: {
     backgroundColor: Colors.white,
     marginHorizontal: 16,

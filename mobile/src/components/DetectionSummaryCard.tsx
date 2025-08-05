@@ -3,16 +3,24 @@ import { View, Text, TouchableOpacity, Image } from 'react-native';
 import { DetectionItem } from '../services/api/detectionApi';
 import styles from '../styles/DetectionSummaryCard.styles';
 import { ObjectService } from '../services/api/objectApi';
+import { formatDateTime } from '../utils/dateUtils';
 
 type Props = {
   item: DetectionItem;
   onPress: () => void;
+  isGridLayout?: boolean;
+  isLastInRow?: boolean;
 };
 
-export default function DetectionSummaryCard({ item, onPress }: Props) {
+export default function DetectionSummaryCard({ 
+  item, 
+  onPress, 
+  isGridLayout = false,
+  isLastInRow = false 
+}: Props) {
   const [objectName, setObjectName] = useState<string>('Loading...');
   const objectService = ObjectService.getInstance();
-
+  console.log(item);
   useEffect(() => {
     const fetchObject = async () => {
       try {
@@ -34,10 +42,13 @@ export default function DetectionSummaryCard({ item, onPress }: Props) {
     fetchObject();
   }, [item.object_id, objectService]);
 
+  const cardStyle = isGridLayout 
+    ? [styles.card, styles.gridCard, isLastInRow && styles.lastInRow]
+    : styles.card;
+
   return (
-    <TouchableOpacity style={styles.card} onPress={onPress}>
+    <TouchableOpacity style={cardStyle} onPress={onPress}>
       {/* 썸네일 이미지 */}
-      {console.log(item.image_path)}
       <Image
         source={{ 
             uri: item.image_path 
@@ -67,7 +78,7 @@ export default function DetectionSummaryCard({ item, onPress }: Props) {
       </View>
 
       {/* 탐지 시간 */}
-      <Text style={styles.time}>{item.created_at}</Text>
+      <Text style={styles.time}>{formatDateTime(item.created_at)}</Text>
     </TouchableOpacity>
   );
 }
