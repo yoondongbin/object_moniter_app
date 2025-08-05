@@ -87,7 +87,7 @@ class ObjectDetectionService:
                             # image_data가 None이거나 빈 문자열인지 확인
                             if not image_data:
                                 print("❌ image_data가 없습니다. 기본 이미지 경로 사용")
-                                image_path = f"/Users/yunseong/Desktop/React_native/Object_monitor/object_moniter_app/back_end/uploads/detections/{object_id}_{i}_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.jpg"
+                                image_path = os.path.join(os.path.dirname(__file__), "uploads", "detections", f"{object_id}_{i}_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.jpg")
                             else:
                                 if image_data.startswith('data:image'):
                                     image_data = image_data.split(',')[1]
@@ -97,7 +97,7 @@ class ObjectDetectionService:
                                 temp_file.write(image_bytes)
                                 temp_file.close()
 
-                                image_path = f"/Users/yunseong/Desktop/React_native/Object_monitor/object_moniter_app/back_end/uploads/detections/{object_id}_{i}_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.jpg"
+                                image_path = os.path.join(os.path.dirname(__file__), "uploads", "detections", f"{object_id}_{i}_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.jpg")
                                 os.makedirs(os.path.dirname(image_path), exist_ok=True)
                                 os.rename(temp_file.name, image_path)
                                 print(f"💾 백업 이미지 저장: {image_path}")

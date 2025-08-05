@@ -70,8 +70,8 @@ class Use_detection_model:
                     class_id = int(box.cls[0].cpu().numpy())
                     confidence = box.conf[0].cpu().numpy()
                     
-                    if class_id == 0:  # 0: 'person' in COCO
-                        if person_count == 0:  # 첫 번째 사람 객체만 처리
+                    if class_id == 0:
+                        if person_count == 0:
                             x1, y1, x2, y2 = box.xyxy[0].cpu().numpy().astype(int)
                             
                             cv2.rectangle(image, (x1, y1), (x2, y2), (0, 255, 0), 3)

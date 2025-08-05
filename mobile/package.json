@@ -22,7 +22,7 @@
     "axios": "^1.11.0",
     "dayjs": "^1.11.13",
     "lodash": "^4.17.21",
-    "react": "19.1.0",
+    "react": "^19.1.0",
     "react-hook-form": "^7.61.1",
     "react-native": "0.80.2",
     "react-native-chart-kit": "^6.12.0",

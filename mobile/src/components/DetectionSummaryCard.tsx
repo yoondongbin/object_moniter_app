@@ -37,7 +37,6 @@ export default function DetectionSummaryCard({ item, onPress }: Props) {
   return (
     <TouchableOpacity style={styles.card} onPress={onPress}>
       {/* 썸네일 이미지 */}
-      {console.log(item.image_path)}
       <Image
         source={{ 
             uri: item.image_path 
