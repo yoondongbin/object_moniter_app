@@ -246,6 +246,35 @@ def get_notifications():
     
     return jsonify([notif.to_dict() for notif in notifications])
 
+@notifications_bp.route('/<int:notification_id>', methods=['GET'])
+@jwt_required()
+def get_notification_detail(notification_id):
+    """특정 알림 상세 조회"""
+    user_id = get_jwt_identity()
+    notification = Notification.query.filter_by(id=notification_id, user_id=user_id).first()
+    
+    if not notification:
+        return jsonify({'error': 'Notification not found'}), 404
+    
+    return jsonify(notification.to_dict())
+
+@notifications_bp.route('/by-detection/<int:detection_id>', methods=['GET'])
+@jwt_required()
+def get_notification_detail_by_detection(detection_id):
+    """detection_id로 알림 상세 조회"""
+    user_id = get_jwt_identity()
+    
+    # detection_id로 알림 조회
+    notification = Notification.query.filter_by(
+        detection_id=detection_id, 
+        user_id=user_id
+    ).first()
+    
+    if not notification:
+        return jsonify({'error': 'Notification not found for this detection'}), 404
+    
+    return jsonify(notification.to_dict())
+
 @notifications_bp.route('/<int:notification_id>/read', methods=['PUT'])
 @jwt_required()
 def mark_as_read(notification_id):
@@ -360,7 +389,7 @@ def update_object_status(object_id):
 @objects_bp.route('/<int:object_id>/detect', methods=['POST'])
 @jwt_required()
 def process_detection(object_id):
-    """객체 탐지 처리 (Base64 이미지 데이터 처리)"""
+    """객체 탐지 처리"""
 
     user_id = get_jwt_identity()
     obj = Object.query.filter_by(id=object_id, user_id=user_id).first()
@@ -369,46 +398,17 @@ def process_detection(object_id):
         return jsonify({'error': 'Object not found'}), 404
     
     try:
-        data = request.get_json()
-        image_data = data.get('image_data')
-        image_format = data.get('image_format', 'jpeg')
-        
-        if not image_data:
-            return jsonify({'error': 'Image data is required'}), 400
-        
-        # Base64 이미지를 임시 파일로 저장
-        import base64
-        import cv2
-        import numpy as np
-        import tempfile
-        import os
-        
-        # Base64 디코딩
-        image_bytes = base64.b64decode(image_data)
-        nparr = np.frombuffer(image_bytes, np.uint8)
-        frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-        
-        if frame is None:
-            return jsonify({'error': 'Invalid image data'}), 400
-        
-        # 임시 파일로 저장
-        temp_dir = tempfile.gettempdir()
-        temp_filename = f"temp_detection_{object_id}.jpg"
-        temp_path = os.path.join(temp_dir, temp_filename)
-        
+
         try:
-            # 이미지를 임시 파일로 저장
-            cv2.imwrite(temp_path, frame)
-            
             # 기존의 detect_object 메서드 사용
-            detection_result = use_detection_model.detect_object(temp_path)
+            detection_result = use_detection_model.detect_object(object_id)
             
             if not detection_result:
                 return jsonify({'error': 'Detection failed'}), 500
             
             # 탐지 결과를 데이터베이스에 저장
             new_detection_result = {
-                'image': image_data,  # Base64 데이터 저장
+                'image': detection_result.get('image_path'),
                 'confidence': detection_result.get('confidence', 0.0),
                 'class': detection_result.get('class', 'unknown'),
                 'detected_object': detection_result.get('detected_object', ''),
@@ -427,8 +427,7 @@ def process_detection(object_id):
             
         finally:
             # 임시 파일 삭제
-            if os.path.exists(temp_path):
-                os.remove(temp_path)
+            print("탐지 완료")
         
     except Exception as e:
         return jsonify({'error': f'탐지 처리 오류: {str(e)}'}), 500

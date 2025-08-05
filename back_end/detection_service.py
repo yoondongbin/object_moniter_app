@@ -15,7 +15,10 @@ class ObjectDetectionService:
     """객체 탐지 및 위험 상태 모니터링 서비스"""
 
     def __init__(self):
-        self.dangerous_objects = ['knife', 'gun', 'suspicious_person']
+        # 클래스 임시 값
+        self.detection_type = [
+            'person', 'dangerous_object', 'suspicious_object'
+        ]
 
     def analyze_danger_level(self, detected_objects):
         """탐지된 객체들의 위험도 분석"""
@@ -38,6 +41,7 @@ class ObjectDetectionService:
 
     def process_frame(self, detection_result, object_id, user_id):
         """프레임 처리 및 위험 상태 탐지"""
+        object_type = random.choice(self.detection_type)
         try:
             detected_objects = []
             if detection_result.get('detected_object', 0) > 0:
@@ -60,29 +64,48 @@ class ObjectDetectionService:
 
                 log = MonitoringLog(
                     object_id=object_id,
-                    event_type='danger_detection',
+                    event_type=object_type,
                     message=log_message
                 )
                 db.session.add(log)
 
+
+
                 if detected_objects:
                     for i, obj in enumerate(detected_objects):
-                        image_data = detection_result.get('image', '')
-                        if image_data.startswith('data:image'):
-                            image_data = image_data.split(',')[1]
+                        print(f"🖼️ 객체 {i+1} 처리 중...")
+                        
+                        # 바운딩 박스 이미지 경로 사용 (이미 저장됨)
+                        image_path = detection_result.get('image')
+                        print(f"🖼️ 이미지 경로: {image_path}")
+                        
+                        if not image_path:
+                            print("⚠️ 이미지 경로가 없어서 백업 처리")
+                            # 백업: 원본 이미지 저장
+                            image_data = detection_result.get('image', '')
+                            
+                            # image_data가 None이거나 빈 문자열인지 확인
+                            if not image_data:
+                                print("❌ image_data가 없습니다. 기본 이미지 경로 사용")
+                                image_path = f"/Users/yunseong/Desktop/React_native/Object_monitor/object_moniter_app/back_end/uploads/detections/{object_id}_{i}_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.jpg"
+                            else:
+                                if image_data.startswith('data:image'):
+                                    image_data = image_data.split(',')[1]
 
-                        image_bytes = base64.b64decode(image_data)
-                        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.jpg')
-                        temp_file.write(image_bytes)
-                        temp_file.close()
+                                image_bytes = base64.b64decode(image_data)
+                                temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.jpg')
+                                temp_file.write(image_bytes)
+                                temp_file.close()
 
-                        image_path = f"/Users/yunseong/Desktop/React_native/Object_monitor/object_moniter_app/back_end/uploads/detections/{object_id}_{i}_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.jpg"
-                        os.makedirs(os.path.dirname(image_path), exist_ok=True)
-                        os.rename(temp_file.name, image_path)
+                                image_path = f"/Users/yunseong/Desktop/React_native/Object_monitor/object_moniter_app/back_end/uploads/detections/{object_id}_{i}_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.jpg"
+                                os.makedirs(os.path.dirname(image_path), exist_ok=True)
+                                os.rename(temp_file.name, image_path)
+                                print(f"💾 백업 이미지 저장: {image_path}")
 
+                        print(f" 탐지 결과 객체 생성: class={obj['class']}, confidence={obj['confidence']}")
                         detection_result_obj = DetectionResult(
                             object_id=object_id,
-                            detection_type='dangerous_object',
+                            detection_type=object_type,
                             object_class=obj['class'],
                             confidence=obj['confidence'],
                             bbox_x=obj['bbox'][0],
@@ -93,20 +116,24 @@ class ObjectDetectionService:
                             image_path=image_path
                         )
                         db.session.add(detection_result_obj)
-
-                if danger_level != 'safe':
-                    notification_type = 'danger' if danger_level == 'high' else 'warning'
-                    title = '🚨 위험 상태' if danger_level == 'high' else '🚨🚨 긴급 상황'
-                    notification = Notification(
-                        user_id=user_id,
-                        object_id=object_id,
-                        title=title,
-                        message=alert_message,
-                        notification_type=notification_type
-                    )
-                    db.session.add(notification)
-
+                        # DetectionResult를 먼저 flush하여 ID 생성
+                        db.session.flush()
+                        print(f"✅ 탐지 결과 객체 추가됨: ID={detection_result_obj.id}")
+                        
+                        # 위험한 상황일 때 알림 생성
+                        if danger_level != 'safe':
+                            notification = Notification(
+                                user_id=user_id,
+                                detection_id=detection_result_obj.id,  # DetectionResult의 ID 사용
+                                title=f"🚨 {danger_level.upper()} 위험",
+                                message=alert_message,
+                                notification_type=danger_level
+                            )
+                            db.session.add(notification)
+                            print(f"✅ 알림 생성됨: detection_id={detection_result_obj.id}")
+                print("데이터베이스 커밋 시도...")
                 db.session.commit()
+                print(f"✅ 탐지 결과 저장 완료: {len(detected_objects)}개 객체")
 
             except Exception as e:
                 db.session.rollback()

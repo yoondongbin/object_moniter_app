@@ -51,7 +51,7 @@ export const API_ENDPOINTS = {
   DETECTIONS: {
     LIST: () => ({ path: `/api/objects/detections/`, requiresAuth: true }), // GET
     DETAIL: (objectId: number, detectionId: number) => ({ path: `/api/objects/${objectId}/detections/${detectionId}/`, requiresAuth: true }), // GET
-    DETECT: (objectId: number) => ({ path: `/api/objects/${objectId}/detect/`, requiresAuth: true}), // POST
+    DETECT: (objectId: number,) => ({ path: `/api/objects/${objectId}/detect/`, requiresAuth: true}), // POST
     UPDATE: (objectId: number, detectionId: number) => ({ path: `/api/objects/${objectId}/detections/${detectionId}/`, requiresAuth: true }), // PUT
     DELETE: (objectId: number, detectionId: number) => ({ path: `/api/objects/${objectId}/detections/${detectionId}/`, requiresAuth: true }), // DELETE
     STATS: (objectId: number) => ({ path: `/api/objects/${objectId}/detections/stats/`, requiresAuth: true }), // GET
@@ -62,6 +62,7 @@ export const API_ENDPOINTS = {
   NOTIFICATIONS: {
     LIST: { path: '/api/notifications/', requiresAuth: true }, // GET
     DETAIL: (notificationId: number) => ({ path: `/api/notifications/${notificationId}/`, requiresAuth: true }), // GET
+    BY_DETECTION: (detectionId: number) => ({ path: `/api/notifications/by-detection/${detectionId}/`, requiresAuth: true }),
     CHECK: (notificationId: number) => ({ path: `/api/notifications/${notificationId}/read/`, requiresAuth: true }), // PUT
     DELETE: (notificationId: number) => ({ path: `/api/notifications/${notificationId}/`, requiresAuth: true }), // DELETE
     SEND_INTERNAL: { path: '/api/notifications/send-internal/', requiresAuth: false }, // POST

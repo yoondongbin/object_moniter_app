@@ -1,18 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, Alert, Image, ActivityIndicator } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import styles from '../styles/MainScreen.styles';
 import { DetectionService } from '../services/api/detectionApi';
 import DetectionSummaryCard from '../components/DetectionSummaryCard';
 import AlertSummaryCard from '../components/AlertSummaryCard';
 import { NotificationService } from '../services/api/notificationApi';
-import { detectionUtils } from '../utils/detectionUtils';
 
 const MainScreen = ({ navigation }: any) => {
   const [detections, setDetections] = useState<any[]>([]);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [isDetecting, setIsDetecting] = useState(false);
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
     const detectionService = DetectionService.getInstance();
@@ -28,97 +25,46 @@ const MainScreen = ({ navigation }: any) => {
     notificationService.getNotifications().then((result: any) => setNotifications(result ?? []));
   }, []);
 
-  const handleImagePicker = async () => {
-    if (isDetecting) {
-      Alert.alert('탐지 중', '이미 객체 탐지가 진행 중입니다.');
-      return;
-    }
-
-    const imageUri = await detectionUtils.handleImagePicker();
-    if (imageUri) {
-      setSelectedImage(imageUri);
-    }
-  };
-
   const handleStartDetection = async () => {
     if (isDetecting) {
       Alert.alert('탐지 중', '이미 객체 탐지가 진행 중입니다.');
       return;
     }
 
-    if (!selectedImage) {
-      console.log(detections)
-      Alert.alert('이미지 선택', '먼저 이미지를 선택해주세요.');
-      return;
-    }
-
     setIsDetecting(true);
-    setIsUploading(true);
 
-    await detectionUtils.handleStartDetection(
-      selectedImage,
-      () => {
-        // 성공 시 콜백
-        setSelectedImage(null);
-        setIsDetecting(false);
-        setIsUploading(false);
-        // 탐지 목록 새로고침
-        const detectionService = DetectionService.getInstance();
-        detectionService.getDetections().then((result: any) => setDetections(result ?? []));
-      },
-      (error: string) => {
-        // 오류 시 콜백
-        Alert.alert('오류', error);
-        setIsDetecting(false);
-        setIsUploading(false);
-      }
-    );
-  };
-
-  const handleClearImage = () => {
-    setSelectedImage(null);
+    try {
+      const detectionService = DetectionService.getInstance();
+      // 백엔드에서 무작위 이미지로 탐지 수행
+      await detectionService.createDetection();
+      
+      // 탐지 목록 새로고침
+      detectionService.getDetections().then((result: any) => setDetections(result ?? []));
+      
+      Alert.alert('탐지 완료', '객체 탐지가 완료되었습니다.');
+    } catch (error) {
+      console.error('Detection error:', error);
+      Alert.alert('오류', '객체 탐지 중 오류가 발생했습니다.');
+    } finally {
+      setIsDetecting(false);
+    }
   };
 
   return (
     <View style={styles.container}>
-      {/* 이미지 선택 카드 */}
+      {/* 객체 탐지 카드 */}
       <View style={styles.imageSelectionCard}>
-        <Text style={styles.imageSelectionTitle}>객체 탐지</Text>
         <TouchableOpacity
           style={[styles.detectionButton, isDetecting && styles.detectionButtonDisabled]}
-          onPress={handleImagePicker}
+          onPress={handleStartDetection}
           disabled={isDetecting}
         >
-          <Text style={styles.detectionButtonText}>
-            {isDetecting ? '탐지 중...' : '이미지 선택'}
-          </Text>
+          {isDetecting ? (
+            <ActivityIndicator color="#fff" size="small" />
+          ) : (
+            <Text style={styles.detectionButtonText}>객체 탐지</Text>
+          )}
         </TouchableOpacity>
-
-        {selectedImage && (
-          <View style={styles.imagePreviewContainer}>
-            <Image source={{ uri: selectedImage }} style={styles.imagePreview} />
-            <View style={styles.imageActionsContainer}>
-              <TouchableOpacity
-                style={styles.startDetectionButton}
-                onPress={handleStartDetection}
-                disabled={isUploading}
-              >
-                {isUploading ? (
-                  <ActivityIndicator color="#fff" size="small" />
-                ) : (
-                  <Text style={styles.startDetectionButtonText}>탐지 시작</Text>
-                )}
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.clearImageButton}
-                onPress={handleClearImage}
-                disabled={isUploading}
-              >
-                <Text style={styles.clearImageButtonText}>취소</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        )}
       </View>
 
       {/* 최근 탐지 섹션 */}
@@ -154,7 +100,7 @@ const MainScreen = ({ navigation }: any) => {
         ) : (
           <View style={styles.emptyContainerDashed}>
             <Text style={styles.emptyTitle}>아직 탐지 기록이 없습니다</Text>
-            <Text style={styles.emptySubtitle}>위에서 이미지를 선택하여{'\n'}객체 탐지를 시작해보세요</Text>
+            <Text style={styles.emptySubtitle}>위의 버튼을 눌러서{'\n'}객체 탐지를 시작해보세요</Text>
           </View>
         )}
       </View>

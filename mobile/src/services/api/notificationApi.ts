@@ -6,7 +6,7 @@ export type NotificationData = {
   id?: number;
   title: string;
   message: string;
-  type: string;
+  notification_type: string;
   is_read?: boolean;
   created_at?: string;
   user_id?: number;
@@ -57,6 +57,18 @@ export class NotificationService {
       return response;
     } catch (error) {
       console.error(`❌ 알림 ${notificationId} 조회 실패:`, error);
+      throw error;
+    }
+  }
+
+  async getNotificationByDetectionId(detectionId: number): Promise<NotificationResponse> {
+    try {
+      const response = await apiClient.get<NotificationResponse>(
+        `${API_ENDPOINTS.NOTIFICATIONS.BY_DETECTION(detectionId).path}`
+      );
+      return response;
+    } catch (error) {
+      console.error(`❌ detection_id ${detectionId}로 알림 조회 실패:`, error);
       throw error;
     }
   }

@@ -28,7 +28,7 @@ class Object(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text)
-    status = db.Column(db.String(20), default='active')
+    status = db.Column(db.String(20), default='inactive')
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -83,7 +83,7 @@ class Notification(db.Model):
     
     def to_dict(self):
         """알림 정보를 딕셔너리로 변환"""
-        return {
+        result = {
             'id': self.id,
             'user_id': self.user_id,
             'detection_id': self.detection_id,
@@ -93,6 +93,7 @@ class Notification(db.Model):
             'is_read': self.is_read,
             'created_at': self.created_at.isoformat() if self.created_at else None
         }
+        return result
 
 class DetectionResult(db.Model):
     """객체 탐지 결과 모델"""

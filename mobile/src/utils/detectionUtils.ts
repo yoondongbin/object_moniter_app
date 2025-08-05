@@ -69,7 +69,7 @@ export const createDetectionUtils = (): DetectionUtils => {
         image_format: 'jpeg'
       };
 
-      await detectionService.createDetection(detectionData);
+      await detectionService.createDetection();
       
       Alert.alert('탐지 완료', '객체 탐지가 완료되었습니다.', [
         {

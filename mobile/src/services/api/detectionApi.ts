@@ -22,7 +22,7 @@ export class DetectionService {
   private static instance: DetectionService;
   private objectId: number;
 
-  private constructor(objectId: number = 0) {
+  private constructor(objectId: number = 1) {
     this.objectId = objectId;
   }
 
@@ -61,11 +61,10 @@ export class DetectionService {
   }
 
   // 새로운 탐지 생성
-  async createDetection(detectionData: Partial<any>): Promise<any> {
+  async createDetection(): Promise<any> {
     try {
       const response = await apiClient.post(
         API_ENDPOINTS.DETECTIONS.DETECT(this.objectId).path,
-        detectionData
       );
       return response;
     } catch (error) {
