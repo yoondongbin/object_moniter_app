@@ -81,7 +81,9 @@ const MainScreen = ({ navigation }: any) => {
 
   return (
     <View style={styles.container}>
-      <View style={styles.detectionButtonContainer}>
+      {/* 이미지 선택 카드 */}
+      <View style={styles.imageSelectionCard}>
+        <Text style={styles.imageSelectionTitle}>객체 탐지</Text>
         <TouchableOpacity
           style={[styles.detectionButton, isDetecting && styles.detectionButtonDisabled]}
           onPress={handleImagePicker}
@@ -119,44 +121,79 @@ const MainScreen = ({ navigation }: any) => {
         )}
       </View>
 
-      <Text style={styles.sectionTitle}>최근 탐지</Text>
-      <FlatList
-        data={detections}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <DetectionSummaryCard
-            item={item}
-            onPress={() =>
-              navigation.navigate('Detection', {
-                screen: 'Detail',
-                params: { id: item.id },
-              })
-            }
-          />
+      {/* 최근 탐지 섹션 */}
+      <View style={styles.sectionContainer}>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>최근 탐지</Text>
+          <TouchableOpacity style={styles.moreButton}>
+            <Text style={styles.moreButtonText}>더보기</Text>
+          </TouchableOpacity>
+        </View>
+        
+        {detections.length > 0 ? (
+          <View style={styles.sectionCard}>
+            <FlatList
+              data={detections}
+              keyExtractor={(item) => item.id}
+              renderItem={({ item }) => (
+                <DetectionSummaryCard
+                  item={item}
+                  onPress={() =>
+                    navigation.navigate('Detection', {
+                      screen: 'Detail',
+                      params: { id: item.id },
+                    })
+                  }
+                />
+              )}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.listContainer}
+            />
+          </View>
+        ) : (
+          <View style={styles.emptyContainerDashed}>
+            <Text style={styles.emptyTitle}>아직 탐지 기록이 없습니다</Text>
+            <Text style={styles.emptySubtitle}>위에서 이미지를 선택하여{'\n'}객체 탐지를 시작해보세요</Text>
+          </View>
         )}
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.listContainer}
-      />
+      </View>
 
-      <Text style={styles.sectionTitle}>최근 알림</Text>
-      <FlatList
-        data={notifications}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <AlertSummaryCard
-            item={item}
-            onPress={() =>
-              navigation.navigate('Detection', {
-                screen: 'Detail',
-                params: { id: item.id },
-              })
-            }
-          />
+      {/* 최근 알림 섹션 */}
+      <View style={styles.sectionContainer}>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>최근 알림</Text>
+          <TouchableOpacity style={styles.moreButton}>
+            <Text style={styles.moreButtonText}>더보기</Text>
+          </TouchableOpacity>
+        </View>
+
+        {notifications.length > 0 ? (
+          <View style={styles.sectionCard}>
+            <FlatList
+              data={notifications}
+              keyExtractor={(item) => item.id}
+              renderItem={({ item }) => (
+                <AlertSummaryCard
+                  item={item}
+                  onPress={() =>
+                    navigation.navigate('Detection', {
+                      screen: 'Detail',
+                      params: { id: item.id },
+                    })
+                  }
+                />
+              )}
+              scrollEnabled={false}
+            />
+          </View>
+        ) : (
+          <View style={styles.emptyContainerDashed}>
+            <Text style={styles.emptyTitle}>알림이 없습니다</Text>
+            <Text style={styles.emptySubtitle}>객체 탐지 시 알림이 표시됩니다</Text>
+          </View>
         )}
-        scrollEnabled={false}
-        contentContainerStyle={styles.alertListContainer}
-      />
+      </View>
     </View>
   );
 };

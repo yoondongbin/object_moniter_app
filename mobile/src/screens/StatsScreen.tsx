@@ -44,17 +44,39 @@ export default function StatsScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>주간 탐지 통계</Text>
+      <Text style={styles.title}>통계</Text>
+      <Text style={styles.subtitle}>시간대별 • 위험 등급별 • 유형별</Text>
 
-      <WeekSelector
-        selectedOffset={selectedWeekOffset}
-        onChange={setSelectedWeekOffset}
-      />
+      {detections.length > 0 ? (
+        <>
+          <View style={styles.weekContainer}>
+            <WeekSelector
+              selectedOffset={selectedWeekOffset}
+              onChange={setSelectedWeekOffset}
+            />
+          </View>
 
-      {loading ? (
-        <Text>데이터 로딩 중...</Text>
+          {loading ? (
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyTitle}>데이터 로딩 중...</Text>
+            </View>
+          ) : (
+            <Chart data={chartData} />
+          )}
+        </>
       ) : (
-        <Chart data={chartData} />
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyTitle}>통계 데이터가 없습니다</Text>
+          <Text style={styles.emptySubtitle}>
+            객체 탐지를 실행하면 여기서{'\n'}
+            다양한 통계를 확인할 수 있습니다
+          </Text>
+          <Text style={styles.emptyDescription}>
+            • 시간대별 탐지 현황{'\n'}
+            • 위험 등급별 분포{'\n'}
+            • 객체 유형별 통계
+          </Text>
+        </View>
       )}
     </View>
   );
