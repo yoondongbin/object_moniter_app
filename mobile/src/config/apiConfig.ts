@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 // API 설정
 export const API_CONFIG = {
   // 개발 환경
@@ -23,7 +24,14 @@ export const API_CONFIG = {
 
 export const getApiConfig = () => {
   if (__DEV__) {
-    return API_CONFIG.DEVELOPMENT;
+    // Android 에뮬레이터인지 확인
+    const isAndroid = Platform.OS === 'android';
+    const baseUrl = isAndroid ? 'http://10.0.2.2:5010' : 'http://localhost:5010';
+    
+    return {
+      ...API_CONFIG.DEVELOPMENT,
+      BASE_URL: baseUrl,
+    };
   }
   
   return API_CONFIG.DEVELOPMENT;
