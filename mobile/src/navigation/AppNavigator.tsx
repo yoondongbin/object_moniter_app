@@ -2,6 +2,7 @@ import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
 
 import MainScreen from '../screens/MainScreen';
 import DetectionListScreen from '../screens/DetectionListScreen';
@@ -11,27 +12,67 @@ import AlertListScreen from '../screens/AlertListScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
+const TopTab = createMaterialTopTabNavigator();
 
-// 탐지 관련 스택 구성: 리스트 -> 상세 or Alert 전체
-function DetectionStack() {
+// 탐지 리스트 스택 (탐지 리스트 -> 상세)
+function DetectionListStack() {
   return (
     <Stack.Navigator>
       <Stack.Screen
         name="DetectionList"
         component={DetectionListScreen}
-        options={{ title: '탐지 리스트' }}
+        options={{ headerShown: false }}
       />
       <Stack.Screen
         name="Detail"
         component={DetailScreen}
         options={{ title: '상세 보기' }}
       />
+    </Stack.Navigator>
+  );
+}
+
+// 알림 리스트 스택 (알림 리스트 -> 상세)
+function AlertListStack() {
+  return (
+    <Stack.Navigator>
       <Stack.Screen
         name="AlertList"
         component={AlertListScreen}
-        options={{ title: '알림 전체 보기' }}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="Detail"
+        component={DetailScreen}
+        options={{ title: '상세 보기' }}
       />
     </Stack.Navigator>
+  );
+}
+
+// 탐지 관련 상단 탭 구성
+function DetectionTopTabs() {
+  return (
+    <TopTab.Navigator
+      screenOptions={{
+        tabBarActiveTintColor: '#007AFF',
+        tabBarInactiveTintColor: '#8E8E93',
+        tabBarIndicatorStyle: { backgroundColor: '#007AFF' },
+        tabBarLabelStyle: { fontSize: 14, fontWeight: '600' },
+        tabBarStyle: { backgroundColor: '#FFFFFF' },
+      }}
+    >
+      <TopTab.Screen
+        name="DetectionTab"
+        component={DetectionListStack}
+        options={{ title: '탐지 리스트' }}
+      />
+      <TopTab.Screen
+        name="AlertTab"
+        component={AlertListStack}
+        options={{ title: '알림 전체' }}
+      />
+    </TopTab.Navigator>
   );
 }
 
@@ -47,7 +88,7 @@ export default function AppNavigator() {
         />
         <Tab.Screen
           name="Detection"
-          component={DetectionStack}
+          component={DetectionTopTabs}
           options={{ title: '탐지' }}
         />
         <Tab.Screen

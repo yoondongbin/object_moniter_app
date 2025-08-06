@@ -16,7 +16,6 @@ const CHART_WIDTH = CHART_SIZE.width;
 const CHART_HEIGHT = CHART_SIZE.height;
 
 export default function StatsScreen() {
-  const [selectedWeekOffset, setSelectedWeekOffset] = useState(0);
   const [detections, setDetections] = useState<DetectionItem[]>([]);
   const [loading, setLoading] = useState(false);
   
@@ -115,7 +114,6 @@ export default function StatsScreen() {
       {/* 고정 헤더 */}
       <View style={styles.header}>
         <Text style={styles.title}>통계</Text>
-        <Text style={styles.subtitle}>시간대별 • 위험 등급별 • 유형별</Text>
       </View>
 
       {/* 스크롤 가능한 콘텐츠 */}

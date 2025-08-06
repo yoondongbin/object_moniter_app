@@ -6,28 +6,23 @@ from logging.handlers import RotatingFileHandler
 def setup_logger(name='object_monitor'):
     """로깅 시스템 설정"""
     
-    # 로그 디렉토리 생성
     log_dir = 'logs'
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)
     
-    # 로거 생성
     logger = logging.getLogger(name)
     logger.setLevel(logging.INFO)
     
-    # 이미 핸들러가 있으면 추가하지 않음
     if logger.handlers:
         return logger
     
-    # 포맷터 설정
     formatter = logging.Formatter(
         '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
     )
     
-    # 파일 핸들러 (일별 로테이션)
     file_handler = RotatingFileHandler(
         f'{log_dir}/app.log',
-        maxBytes=10*1024*1024,  # 10MB
+        maxBytes=10*1024*1024,
         backupCount=5
     )
     file_handler.setLevel(logging.INFO)

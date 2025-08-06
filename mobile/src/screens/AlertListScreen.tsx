@@ -5,7 +5,7 @@ import { NotificationService, type NotificationData } from '../services/api/noti
 import AlertSummaryCard from '../components/AlertSummaryCard';
 
 interface AlertListScreenProps {
-  navigation?: any; // TODO: 정확한 navigation 타입 지정 필요
+  navigation?: any;
 }
 
 export default function AlertListScreen({ navigation }: AlertListScreenProps) {

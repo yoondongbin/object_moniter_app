@@ -75,16 +75,13 @@ class ObjectDetectionService:
                     for i, obj in enumerate(detected_objects):
                         print(f"🖼️ 객체 {i+1} 처리 중...")
                         
-                        # 바운딩 박스 이미지 경로 사용 (이미 저장됨)
                         image_path = detection_result.get('image')
                         print(f"🖼️ 이미지 경로: {image_path}")
                         
                         if not image_path:
                             print("⚠️ 이미지 경로가 없어서 백업 처리")
-                            # 백업: 원본 이미지 저장
                             image_data = detection_result.get('image', '')
                             
-                            # image_data가 None이거나 빈 문자열인지 확인
                             if not image_data:
                                 print("❌ image_data가 없습니다. 기본 이미지 경로 사용")
                                 image_path = os.path.join(os.path.dirname(__file__), "uploads", "detections", f"{object_id}_{i}_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.jpg")
@@ -116,7 +113,6 @@ class ObjectDetectionService:
                             image_path=image_path
                         )
                         db.session.add(detection_result_obj)
-                        # DetectionResult를 먼저 flush하여 ID 생성
                         db.session.flush()
                         print(f"✅ 탐지 결과 객체 추가됨: ID={detection_result_obj.id}")
                         

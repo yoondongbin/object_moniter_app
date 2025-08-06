@@ -36,7 +36,7 @@ export async function sendDetectionNotification(detectionData?: any) {
     
     const notification = {
       title: '🚨 객체 감지됨!',
-      body: detectionData?.danger_level === 'high' 
+      body: detectionData?.danger_level === 'high'
         ? '⚠️ 위험한 객체가 감지되었습니다!' 
         : detectionData?.danger_level === 'medium'
         ? '⚠️ 주의가 필요한 객체가 감지되었습니다!'

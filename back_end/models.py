@@ -11,7 +11,6 @@ class User(db.Model):
     password_hash = db.Column(db.String(255), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
-    # 관계 설정
     objects = db.relationship('Object', backref='user', lazy=True)
     
     def to_dict(self):
@@ -33,7 +32,6 @@ class Object(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
-    # 관계 설정
     logs = db.relationship('MonitoringLog', backref='object', lazy=True)
     
     def to_dict(self):
@@ -77,7 +75,6 @@ class Notification(db.Model):
     is_read = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
-    # 관계 설정
     user = db.relationship('User', backref='notifications')
     detection = db.relationship('DetectionResult', backref='notifications')
     
@@ -110,7 +107,6 @@ class DetectionResult(db.Model):
     image_path = db.Column(db.String(500))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
-    # 관계 설정
     object = db.relationship('Object', backref='detection_results')
     
     def to_dict(self):

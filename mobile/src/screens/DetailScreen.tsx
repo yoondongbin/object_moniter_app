@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, Image } from 'react-native';
+import { View, Text, Image, ScrollView } from 'react-native';
 import { useRoute } from '@react-navigation/native';
 import { DetectionService, type DetectionItem } from '../services/api/detectionApi';
 import { NotificationService, type NotificationData } from '../services/api/notificationApi';
@@ -30,6 +30,7 @@ const DetailScreen = () => {
   }
 
   return (
+    <ScrollView>
     <View style={styles.container}>
       <Text style={styles.sectionTitle}>탐지 정보</Text>
       <Image
@@ -55,6 +56,7 @@ const DetailScreen = () => {
         </>
       )}
     </View>
+    </ScrollView>
   );
 };
 

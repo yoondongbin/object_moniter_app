@@ -19,12 +19,10 @@ export default function App() {
       }
     }
 
-    // 알림 이벤트 리스너 설정
     const unsubscribe = notifee.onForegroundEvent(({ type, detail }) => {
       switch (type) {
         case EventType.PRESS:
           console.log('알림이 터치되었습니다:', detail.notification);
-          // 알림 터치 시 특정 화면으로 이동하는 로직 추가 가능
           break;
         case EventType.DISMISSED:
           console.log('알림이 해제되었습니다:', detail.notification);
@@ -32,10 +30,9 @@ export default function App() {
       }
     });
 
-    requestPermission(); // 앱 시작 시 1회 요청
+    requestPermission();
     autoLogin();
 
-    // 컴포넌트 언마운트 시 리스너 해제
     return () => {
       unsubscribe();
     };

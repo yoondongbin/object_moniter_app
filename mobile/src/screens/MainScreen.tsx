@@ -5,7 +5,7 @@ import { DetectionService } from '../services/api/detectionApi';
 import DetectionSummaryCard from '../components/DetectionSummaryCard';
 import AlertSummaryCard from '../components/AlertSummaryCard';
 import { NotificationService } from '../services/api/notificationApi';
-import { sendDetectionNotification, sendDangerLevelNotification, sendTestNotification } from '../utils/alramUtils';
+import { sendDetectionNotification, sendDangerLevelNotification } from '../utils/alramUtils';
 
 const MainScreen = ({ navigation }: any) => {
   const [detections, setDetections] = useState<any[]>([]);
@@ -150,7 +150,7 @@ const MainScreen = ({ navigation }: any) => {
           <Text style={styles.sectionTitle}>최근 탐지</Text>
           <TouchableOpacity 
             style={styles.moreButton}
-            onPress={() => navigation.navigate('Detection', { screen: 'DetectionList' })}
+            onPress={() => navigation.navigate('Detection', { screen: 'DetectionTab', params: { screen: 'DetectionList' } })}
           >
             <Text style={styles.moreButtonText}>더보기</Text>
           </TouchableOpacity>
@@ -166,8 +166,8 @@ const MainScreen = ({ navigation }: any) => {
                   item={item}
                   onPress={() =>
                     navigation.navigate('Detection', {
-                      screen: 'Detail',
-                      params: { id: item.id },
+                      screen: 'DetectionTab',
+                      params: { screen: 'Detail', params: { id: item.id } },
                     })
                   }
                 />
@@ -195,7 +195,7 @@ const MainScreen = ({ navigation }: any) => {
           <Text style={styles.sectionTitle}>최근 알림</Text>
           <TouchableOpacity 
             style={styles.moreButton}
-            onPress={() => navigation.navigate('Detection', { screen: 'AlertList' })}
+            onPress={() => navigation.navigate('Detection', { screen: 'AlertTab', params: { screen: 'AlertList' } })}
           >
             <Text style={styles.moreButtonText}>더보기</Text>
           </TouchableOpacity>
@@ -211,8 +211,8 @@ const MainScreen = ({ navigation }: any) => {
                   item={item}
                   onPress={() =>
                     navigation.navigate('Detection', {
-                      screen: 'Detail',
-                      params: { id: item.id },
+                      screen: 'AlertTab',
+                      params: { screen: 'Detail', params: { id: item.id } },
                     })
                   }
                 />
