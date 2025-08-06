@@ -60,7 +60,7 @@ const DateRangeSelector = ({ startDate, endDate, onStartDateChange, onEndDateCha
           style={styles.calendarButton} 
           onPress={handleCalendarPress}
         >
-          <Text style={styles.calendarButtonText}>📅 기간 설정</Text>
+          <Text style={styles.calendarButtonText}>기간 설정</Text>
         </TouchableOpacity>
       </View>
 
