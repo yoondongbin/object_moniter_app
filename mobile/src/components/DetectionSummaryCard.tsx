@@ -48,10 +48,9 @@ export default function DetectionSummaryCard({
 
   return (
     <TouchableOpacity style={cardStyle} onPress={onPress}>
-      {/* 썸네일 이미지 */}
       <Image
         source={{ 
-            uri: item.image_path 
+            uri: (item.image_path) 
         }}
         style={styles.thumbnail}
         resizeMode="cover"

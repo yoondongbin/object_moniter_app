@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, ActivityIndicator } from 'react-native';
+import { View, Text, FlatList } from 'react-native';
 import styles from '../styles/DetectionListScreen.styles';
 import DetectionSummaryCard from '../components/DetectionSummaryCard';
 import { DetectionService, type DetectionItem } from '../services/api/detectionApi';
@@ -25,7 +25,7 @@ const DetectionListScreen = ({ navigation }: DetectionListScreenProps) => {
       }
     } catch (error) {
       console.error('탐지 결과 로드 실패:', error);
-      setDetectionList([]); // 실패 시 빈 배열로 초기화
+      setDetectionList([]);
     } finally {
       setIsLoading(false);
     }

@@ -1,10 +1,10 @@
 // DateRangeSelector.tsx
 import React from 'react';
-import { View, Text, TouchableOpacity, Alert, Platform } from 'react-native';
-import DateTimePickerModal from 'react-native-modal-datetime-picker';
+import { View, Text, TouchableOpacity } from 'react-native';
 import styles from '../styles/DateRangeSelector.styles';
 import { format, differenceInDays } from 'date-fns';
 import { ko } from 'date-fns/locale';
+import CalendarPicker from './CalendarPicker';
 
 interface Props {
   startDate: Date;
@@ -14,80 +14,19 @@ interface Props {
   chartWidth?: number;
 }
 
-const DateRangeSelector = ({ startDate, endDate, onStartDateChange, onEndDateChange, chartWidth }: Props) => {
-  const [showStartPicker, setShowStartPicker] = React.useState(false);
-  const [showEndPicker, setShowEndPicker] = React.useState(false);
-  const [activeButton, setActiveButton] = React.useState<'start' | 'end' | null>(null);
+const DateRangeSelector = ({ startDate, endDate, onStartDateChange, onEndDateChange }: Props) => {
+  const [showCalendarPicker, setShowCalendarPicker] = React.useState(false);
 
   // 날짜 범위 계산
   const daysDifference = differenceInDays(endDate, startDate) + 1;
 
-  // 프리셋 날짜 범위 설정
-  const handlePresetRange = (days: number) => {
-    const newEndDate = new Date();
-    const newStartDate = new Date();
-    newStartDate.setDate(newStartDate.getDate() - days + 1);
-    
-    onStartDateChange(newStartDate);
-    onEndDateChange(newEndDate);
+  const handleCalendarPress = () => {
+    setShowCalendarPicker(true);
   };
 
-  const handleStartDatePress = () => {
-    try {
-      setActiveButton('start');
-      setShowStartPicker(true);
-    } catch (error) {
-      console.error('DatePicker 오류:', error);
-      Alert.alert(
-        '날짜 선택 오류',
-        '날짜 선택기를 열 수 없습니다. 프리셋 버튼을 사용해보세요.',
-        [{ text: '확인' }]
-      );
-    }
-  };
-
-  const handleEndDatePress = () => {
-    try {
-      setActiveButton('end');
-      setShowEndPicker(true);
-    } catch (error) {
-      console.error('DatePicker 오류:', error);
-      Alert.alert(
-        '날짜 선택 오류',
-        '날짜 선택기를 열 수 없습니다. 프리셋 버튼을 사용해보세요.',
-        [{ text: '확인' }]
-      );
-    }
-  };
-
-  const handleStartDateConfirm = (date: Date) => {
-    try {
-      onStartDateChange(date);
-      setShowStartPicker(false);
-      setActiveButton(null);
-    } catch (error) {
-      console.error('날짜 설정 오류:', error);
-      setShowStartPicker(false);
-      setActiveButton(null);
-    }
-  };
-
-  const handleEndDateConfirm = (date: Date) => {
-    try {
-      onEndDateChange(date);
-      setShowEndPicker(false);
-      setActiveButton(null);
-    } catch (error) {
-      console.error('날짜 설정 오류:', error);
-      setShowEndPicker(false);
-      setActiveButton(null);
-    }
-  };
-
-  const handleCancel = () => {
-    setShowStartPicker(false);
-    setShowEndPicker(false);
-    setActiveButton(null);
+  const handleCalendarConfirm = (startDate: Date, endDate: Date) => {
+    onStartDateChange(startDate);
+    onEndDateChange(endDate);
   };
 
   return (
@@ -98,60 +37,30 @@ const DateRangeSelector = ({ startDate, endDate, onStartDateChange, onEndDateCha
         <Text style={styles.headerSubtitle}>시작일과 종료일을 선택하세요</Text>
       </View>
 
-      {/* 프리셋 버튼들 */}
-      <View style={styles.presetContainer}>
-        <TouchableOpacity 
-          style={styles.presetButton} 
-          onPress={() => handlePresetRange(7)}
-        >
-          <Text style={styles.presetText}>7일</Text>
-        </TouchableOpacity>
-        <TouchableOpacity 
-          style={styles.presetButton} 
-          onPress={() => handlePresetRange(14)}
-        >
-          <Text style={styles.presetText}>2주</Text>
-        </TouchableOpacity>
-        <TouchableOpacity 
-          style={styles.presetButton} 
-          onPress={() => handlePresetRange(30)}
-        >
-          <Text style={styles.presetText}>1개월</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* 날짜 선택 버튼 */}
+      {/* 날짜 정보 표시 */}
       <View style={styles.selectorRow}>
-        <TouchableOpacity 
-          style={[
-            styles.dateButton, 
-            activeButton === 'start' && styles.dateButtonActive
-          ]} 
-          onPress={handleStartDatePress}
-        >
+        <View style={styles.dateInfo}>
           <Text style={styles.dateLabel}>시작일</Text>
-          <Text style={[
-            styles.dateText, 
-            activeButton === 'start' && styles.dateTextActive
-          ]}>
+          <Text style={styles.dateText}>
             {format(startDate, 'MM월 dd일', { locale: ko })}
           </Text>
-        </TouchableOpacity>
+        </View>
 
-        <TouchableOpacity 
-          style={[
-            styles.dateButton, 
-            activeButton === 'end' && styles.dateButtonActive
-          ]} 
-          onPress={handleEndDatePress}
-        >
+        <View style={styles.dateInfo}>
           <Text style={styles.dateLabel}>종료일</Text>
-          <Text style={[
-            styles.dateText, 
-            activeButton === 'end' && styles.dateTextActive
-          ]}>
+          <Text style={styles.dateText}>
             {format(endDate, 'MM월 dd일', { locale: ko })}
           </Text>
+        </View>
+      </View>
+
+      {/* 기간 설정 버튼 */}
+      <View style={styles.calendarButtonContainer}>
+        <TouchableOpacity 
+          style={styles.calendarButton} 
+          onPress={handleCalendarPress}
+        >
+          <Text style={styles.calendarButtonText}>📅 기간 설정</Text>
         </TouchableOpacity>
       </View>
 
@@ -165,34 +74,14 @@ const DateRangeSelector = ({ startDate, endDate, onStartDateChange, onEndDateCha
         </Text>
       </View>
 
-      {/* 시작일 선택 모달 - 에러 핸들링 포함 */}
-      {Platform.OS === 'ios' || Platform.OS === 'android' ? (
-        <DateTimePickerModal
-          isVisible={showStartPicker}
-          mode="date"
-          date={startDate}
-          maximumDate={endDate} // 종료일 이후 선택 불가
-          onConfirm={handleStartDateConfirm}
-          onCancel={handleCancel}
-          confirmTextIOS="확인"
-          cancelTextIOS="취소"
-        />
-      ) : null}
-
-      {/* 종료일 선택 모달 - 에러 핸들링 포함 */}
-      {Platform.OS === 'ios' || Platform.OS === 'android' ? (
-        <DateTimePickerModal
-          isVisible={showEndPicker}
-          mode="date"
-          date={endDate}
-          minimumDate={startDate} // 시작일 이전 선택 불가
-          maximumDate={new Date()} // 오늘 이후 선택 불가
-          onConfirm={handleEndDateConfirm}
-          onCancel={handleCancel}
-          confirmTextIOS="확인"
-          cancelTextIOS="취소"
-        />
-      ) : null}
+      {/* 캘린더 피커 모달 */}
+      <CalendarPicker
+        isVisible={showCalendarPicker}
+        onClose={() => setShowCalendarPicker(false)}
+        onConfirm={handleCalendarConfirm}
+        initialStartDate={startDate}
+        initialEndDate={endDate}
+      />
     </View>
   );
 };

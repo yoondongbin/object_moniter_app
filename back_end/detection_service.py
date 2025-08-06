@@ -78,13 +78,18 @@ class ObjectDetectionService:
                         image_path = detection_result.get('image')
                         print(f"🖼️ 이미지 경로: {image_path}")
                         
+                        # 상대 경로 생성 (DB 저장용)
+                        relative_image_path = f"detections/{object_id}_{i}_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.jpg"
+                        full_image_path = os.path.join(os.path.dirname(__file__), "uploads", relative_image_path)
+                        
                         if not image_path:
                             print("⚠️ 이미지 경로가 없어서 백업 처리")
                             image_data = detection_result.get('image', '')
                             
                             if not image_data:
                                 print("❌ image_data가 없습니다. 기본 이미지 경로 사용")
-                                image_path = os.path.join(os.path.dirname(__file__), "uploads", "detections", f"{object_id}_{i}_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.jpg")
+                                os.makedirs(os.path.dirname(full_image_path), exist_ok=True)
+                                # 빈 이미지 파일 생성 (실제로는 기본 이미지를 복사해야 함)
                             else:
                                 if image_data.startswith('data:image'):
                                     image_data = image_data.split(',')[1]
@@ -94,10 +99,16 @@ class ObjectDetectionService:
                                 temp_file.write(image_bytes)
                                 temp_file.close()
 
-                                image_path = os.path.join(os.path.dirname(__file__), "uploads", "detections", f"{object_id}_{i}_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.jpg")
-                                os.makedirs(os.path.dirname(image_path), exist_ok=True)
-                                os.rename(temp_file.name, image_path)
-                                print(f"💾 백업 이미지 저장: {image_path}")
+                                os.makedirs(os.path.dirname(full_image_path), exist_ok=True)
+                                os.rename(temp_file.name, full_image_path)
+                                print(f"💾 백업 이미지 저장: {full_image_path}")
+                        else:
+                            # 기존 이미지 경로에서 파일을 복사
+                            if os.path.exists(image_path):
+                                import shutil
+                                os.makedirs(os.path.dirname(full_image_path), exist_ok=True)
+                                shutil.copy2(image_path, full_image_path)
+                                print(f"💾 이미지 복사 완료: {image_path} -> {full_image_path}")
 
                         print(f" 탐지 결과 객체 생성: class={obj['class']}, confidence={obj['confidence']}")
                         detection_result_obj = DetectionResult(
@@ -110,7 +121,7 @@ class ObjectDetectionService:
                             bbox_width=obj['bbox'][2] - obj['bbox'][0],
                             bbox_height=obj['bbox'][3] - obj['bbox'][1],
                             danger_level=danger_level,
-                            image_path=image_path
+                            image_path=relative_image_path  # 상대 경로만 저장
                         )
                         db.session.add(detection_result_obj)
                         db.session.flush()

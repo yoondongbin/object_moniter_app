@@ -55,24 +55,15 @@ export default StyleSheet.create({
     justifyContent: 'space-between',
     gap: 12,
   },
-  dateButton: {
+  dateInfo: {
     flex: 1,
     paddingVertical: 16,
     paddingHorizontal: 16,
     borderRadius: 12,
-    borderWidth: 2,
+    borderWidth: 1,
     borderColor: Colors.border,
     backgroundColor: Colors.background,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 2,
-  },
-  dateButtonActive: {
-    borderColor: '#8B5CF6',
-    backgroundColor: '#F3F4F6',
   },
   dateLabel: {
     fontSize: 12,
@@ -87,8 +78,28 @@ export default StyleSheet.create({
     color: Colors.textPrimary,
     fontWeight: '700',
   },
-  dateTextActive: {
-    color: '#8B5CF6',
+  
+  // 캘린더 버튼
+  calendarButtonContainer: {
+    marginTop: 16,
+    marginBottom: 12,
+  },
+  calendarButton: {
+    backgroundColor: '#8B5CF6',
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    alignItems: 'center',
+    shadowColor: '#8B5CF6',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  calendarButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: 'white',
   },
   
   // 날짜 범위 표시
