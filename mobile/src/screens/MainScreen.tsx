@@ -5,24 +5,49 @@ import { DetectionService } from '../services/api/detectionApi';
 import DetectionSummaryCard from '../components/DetectionSummaryCard';
 import AlertSummaryCard from '../components/AlertSummaryCard';
 import { NotificationService } from '../services/api/notificationApi';
+import { sendDetectionNotification, sendDangerLevelNotification, sendTestNotification } from '../utils/alramUtils';
 
 const MainScreen = ({ navigation }: any) => {
   const [detections, setDetections] = useState<any[]>([]);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [isDetecting, setIsDetecting] = useState(false);
 
-  useEffect(() => {
-    const detectionService = DetectionService.getInstance();
-    const notificationService = NotificationService.getInstance();
-    detectionService.getDetections().then((result: any) => {
-      console.log('Detection API response:', result);
-      const detectionData = result?.data || result || [];
+  const refreshNotifications = async () => {
+    try {
+      const notificationService = NotificationService.getInstance();
+      const notificationResult = await notificationService.getNotifications();
+      const notificationData = Array.isArray(notificationResult?.data) ? notificationResult.data : 
+                             Array.isArray(notificationResult) ? notificationResult : [];
+      setNotifications(notificationData);
+    } catch (error) {
+      console.error('Failed to refresh notifications:', error);
+    }
+  };
+
+  const refreshDetections = async () => {
+    try {
+      const detectionService = DetectionService.getInstance();
+      const detectionResult = await detectionService.getDetections();
+      const detectionData = detectionResult?.data || detectionResult || [];
       setDetections(detectionData);
-    }).catch((error) => {
-      console.error('Failed to fetch detections:', error);
-      setDetections([]);
-    });
-    notificationService.getNotifications().then((result: any) => setNotifications(result ?? []));
+    } catch (error) {
+      console.error('Failed to refresh detections:', error);
+    }
+  };
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        await Promise.all([
+          refreshDetections(),
+          refreshNotifications()
+        ]);
+      } catch (error) {
+        console.error('Failed to load data:', error);
+      }
+    };
+
+    loadData();
   }, []);
 
   const handleStartDetection = async () => {
@@ -35,11 +60,42 @@ const MainScreen = ({ navigation }: any) => {
 
     try {
       const detectionService = DetectionService.getInstance();
-      // 백엔드에서 무작위 이미지로 탐지 수행
-      await detectionService.createDetection();
       
-      // 탐지 목록 새로고침
-      detectionService.getDetections().then((result: any) => setDetections(result ?? []));
+      const detectionResult = await detectionService.createDetection();
+      
+      // 서버 데이터 저장을 위한 짧은 지연
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      await Promise.all([
+        refreshDetections(),
+        refreshNotifications()
+      ]);
+      
+      // 로컬 알림 발송
+      if (detectionResult) {
+        console.log('🔍 전체 탐지 결과:', JSON.stringify(detectionResult, null, 2));
+        
+        // 백엔드에서 반환하는 실제 구조 처리
+        let detectionData = null;
+        let dangerLevel = 'safe';
+        let confidence = 0.0;
+        
+        detectionData = detectionResult.result;
+        dangerLevel = detectionData.danger_level || 'safe';
+        confidence = detectionData.detected_objects[0].confidence || 0.0;
+        
+        console.log('🔍 처리된 탐지 데이터:', JSON.stringify(detectionData, null, 2));
+        console.log('🔍 위험도:', dangerLevel);
+        console.log('🔍 신뢰도:', confidence);
+        
+        if (dangerLevel && dangerLevel !== 'safe') {
+          await sendDangerLevelNotification(dangerLevel, confidence);
+        } else {
+          await sendDetectionNotification(detectionData);
+        }
+      } else {
+        console.log('❌ 탐지 결과가 없습니다:', detectionResult);
+      }
       
       Alert.alert('탐지 완료', '객체 탐지가 완료되었습니다.');
     } catch (error) {

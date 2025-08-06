@@ -2,13 +2,43 @@ import React, { useEffect, useState } from 'react';
 import { View, Text } from 'react-native';
 import { authService } from './src/services/api/authApi';
 import AppNavigator from './src/navigation/AppNavigator';
+import notifee, { EventType } from '@notifee/react-native';
 
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    async function requestPermission() {
+      const settings = await notifee.requestPermission();
+
+      if (settings.authorizationStatus >= 1) {
+        console.log('✅ 알림 권한 허용됨');
+      } else {
+        console.log('❌ 알림 권한 거부됨');
+      }
+    }
+
+    // 알림 이벤트 리스너 설정
+    const unsubscribe = notifee.onForegroundEvent(({ type, detail }) => {
+      switch (type) {
+        case EventType.PRESS:
+          console.log('알림이 터치되었습니다:', detail.notification);
+          // 알림 터치 시 특정 화면으로 이동하는 로직 추가 가능
+          break;
+        case EventType.DISMISSED:
+          console.log('알림이 해제되었습니다:', detail.notification);
+          break;
+      }
+    });
+
+    requestPermission(); // 앱 시작 시 1회 요청
     autoLogin();
+
+    // 컴포넌트 언마운트 시 리스너 해제
+    return () => {
+      unsubscribe();
+    };
   }, []);
 
   const autoLogin = async () => {

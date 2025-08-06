@@ -1,6 +1,7 @@
 // src/services/api/DetectionService.ts
 import apiClient from './apiClient';
 import { API_ENDPOINTS } from '../../config/apiConfig';
+import { sendDetectionNotification, sendDangerLevelNotification } from '../../utils/alramUtils';
 
 export type DetectionItem = {
   id?: number;
@@ -60,12 +61,34 @@ export class DetectionService {
     }
   }
 
-  // 새로운 탐지 생성
+  // 새로운 탐지 생성 (알림 포함)
   async createDetection(): Promise<any> {
     try {
       const response = await apiClient.post(
         API_ENDPOINTS.DETECTIONS.DETECT(this.objectId).path,
       );
+      
+      // 탐지 결과에 따라 알림 전송
+      if (response && typeof response === 'object' && 'data' in response) {
+        const responseData = response as any;
+        if (responseData.data && responseData.data.detection_result) {
+          const detectionData = responseData.data.detection_result;
+          
+          // 위험도별 알림 전송
+          if (detectionData.danger_level && detectionData.danger_level !== 'safe') {
+            await sendDangerLevelNotification(
+              detectionData.danger_level, 
+              detectionData.confidence
+            );
+          } else {
+            // 일반 객체 감지 알림
+            await sendDetectionNotification(detectionData);
+          }
+          
+          console.log('🔔 탐지 알림 전송 완료');
+        }
+      }
+      
       return response;
     } catch (error) {
       console.error(`Failed to create detection for object ${this.objectId}:`, error);
