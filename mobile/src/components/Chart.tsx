@@ -94,9 +94,10 @@ export default function Chart({
     fillShadowGradientOpacity: 0.1,
   };
 
-  // 반응형 차트 크기 계산 (상수 기반)
-  const responsiveSize = getResponsiveChartSize(chartWidth, chartHeight);
-  const finalChartWidth = responsiveSize.width;
+  // 반응형 차트 크기 계산 (컨테이너에 맞게 조정)
+  const containerWidth = chartWidth || screenWidth - 32; // 좌우 패딩 고려
+  const responsiveSize = getResponsiveChartSize(containerWidth, chartHeight);
+  const finalChartWidth = Math.min(responsiveSize.width, containerWidth);
   const finalChartHeight = responsiveSize.height;
 
   return (

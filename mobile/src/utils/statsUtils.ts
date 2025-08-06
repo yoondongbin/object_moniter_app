@@ -57,12 +57,14 @@ export const getStatsByRange = (
   endDate: Date
 ): DailyStats[] => {
   const start = dayjs(startDate).startOf('day');
-  const end = dayjs(endDate).endOf('day');
+  const end = dayjs(endDate).startOf('day'); // endOf('day') 대신 startOf('day') 사용
   
-  // 선택된 날짜 범위의 탐지 데이터만 필터링
+  // 선택된 날짜 범위의 탐지 데이터만 필터링 (포함)
   const rangeDetections = detections.filter(detection => {
     const detectionDate = dayjs(detection.created_at);
-    return detectionDate.isAfter(start) && detectionDate.isBefore(end);
+    return detectionDate.isSame(start, 'day') || 
+           detectionDate.isSame(end, 'day') || 
+           (detectionDate.isAfter(start) && detectionDate.isBefore(end));
   });
   
   // 날짜별 그룹화 및 집계
@@ -72,7 +74,7 @@ export const getStatsByRange = (
   const result: DailyStats[] = [];
   let currentDate = start;
   
-  // end 날짜까지 반복 (diff를 사용한 날짜 비교)
+  // end 날짜까지 반복 (포함)
   while (currentDate.diff(end, 'day') <= 0) {
     const dateStr = currentDate.format('YYYY-MM-DD');
     const existingData = dailyStats.find(stat => stat.date === dateStr);

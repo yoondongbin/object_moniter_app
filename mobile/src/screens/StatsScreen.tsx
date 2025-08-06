@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, ActivityIndicator, ScrollView, Dimensions } from 'react-native';
+import { View, Text, ActivityIndicator, ScrollView } from 'react-native';
 import styles from '../styles/StatsScreen.styles';
 import DateRangeSelector from '../components/DateRangeSelector';
 import Chart from '../components/Chart';
 import { DetectionService, type DetectionItem } from '../services/api/detectionApi';
-import { getStatsByRange, getWeekData } from '../utils/statsUtils';  // utils 함수 import
-import { CHART_CONFIG, CHART_COLORS, getResponsiveChartSize } from '../constants/chartConstants';
+import { getStatsByRange } from '../utils/statsUtils';  // utils 함수 import
+import { CHART_COLORS, getResponsiveChartSize } from '../constants/chartConstants';
 import dayjs from 'dayjs';
 import 'dayjs/locale/ko';
 dayjs.locale('ko');
@@ -75,21 +75,6 @@ export default function StatsScreen() {
       return null; // 차트를 렌더링하지 않음
     }
 
-    // 최소 3일치 데이터가 필요 (LineChart 안정성을 위해)
-    if (validStats.length < 3) {
-      // 부족한 데이터 포인트를 0으로 채움
-      const paddedStats = [...validStats];
-      while (paddedStats.length < 3) {
-        const lastDate = paddedStats[paddedStats.length - 1]?.date || dayjs().format('YYYY-MM-DD');
-        paddedStats.push({
-          date: dayjs(lastDate).add(1, 'day').format('YYYY-MM-DD'),
-          count: 0,
-          danger_levels: { safe: 0, low: 0, medium: 0, high: 0 }
-        });
-      }
-      validStats.push(...paddedStats.slice(validStats.length));
-    }
-
     return {
       labels: validStats.map((d) => dayjs(d.date).format('M/D')),
       datasets: [
@@ -154,7 +139,7 @@ export default function StatsScreen() {
                   type="line" 
                   showLegend={detections.length > 0}
                   legendLabels={['전체 탐지', '위험 탐지']}
-                  chartWidth={CHART_WIDTH}
+                  chartWidth={CHART_WIDTH - 40} // 패딩 고려
                   chartHeight={CHART_HEIGHT}
                 />
               ) : (

@@ -5,6 +5,7 @@ import { DetectionService, type DetectionItem } from '../services/api/detectionA
 import { NotificationService, type NotificationData } from '../services/api/notificationApi';
 import styles from '../styles/DetailScreen.styles';
 import { formatDateTime } from '../utils/dateUtils';
+import { formatImageUri } from '../utils/imageUtils';
 
 const DetailScreen = () => {
   const route = useRoute();
@@ -34,7 +35,7 @@ const DetailScreen = () => {
     <View style={styles.container}>
       <Text style={styles.sectionTitle}>탐지 정보</Text>
       <Image
-        source={{ uri: (detection.image_path || '') }}
+        source={{ uri: detection.image_path }}
         style={styles.thumbnail}
       />
       <View style={styles.card}>

@@ -111,6 +111,18 @@ class DetectionResult(db.Model):
     
     def to_dict(self):
         """탐지 결과를 딕셔너리로 변환"""
+        # 이미지 URL 생성
+        image_url = None
+        if self.image_path:
+            from flask import request
+            if request:
+                # 현재 요청의 호스트를 기반으로 URL 생성
+                base_url = f"{request.scheme}://{request.host}"
+                image_url = f"{base_url}/uploads/{self.image_path}"
+            else:
+                # 요청 컨텍스트가 없는 경우 상대 경로로 반환
+                image_url = f"/uploads/{self.image_path}"
+        
         return {
             'id': self.id,
             'object_id': self.object_id,
@@ -124,6 +136,6 @@ class DetectionResult(db.Model):
                 'height': self.bbox_height
             },
             'danger_level': self.danger_level,
-            'image_path': self.image_path,
+            'image_path': image_url,  # HTTP URL로 변환
             'created_at': self.created_at.isoformat() if self.created_at else None
         }
