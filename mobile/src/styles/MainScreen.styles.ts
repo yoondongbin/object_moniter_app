@@ -12,6 +12,28 @@ export default StyleSheet.create({
     minHeight: '100%',
   },
   
+  // 헤더 스타일
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    backgroundColor: Colors.white,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: Colors.textPrimary,
+  },
+  logoutButton: {
+    fontSize: 14,
+    color: Colors.primary,
+    fontWeight: '600',
+  },
+  
   // 이미지 선택 카드
   imageSelectionCard: {
     backgroundColor: Colors.white,

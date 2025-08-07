@@ -123,7 +123,6 @@ def create_object():
         # 필수 필드 검증
         name = data.get('name', '').strip()
         description = data.get('description', '').strip()
-        object_type = data.get('object_type', 'general')  # 기본값 설정
         
         if not name:
             return jsonify({'error': 'Object name is required'}), 400
@@ -141,7 +140,6 @@ def create_object():
         new_object = Object(
             name=name,
             description=description,
-            object_type=object_type,
             user_id=user_id,
             status='inactive'  # 기본 상태
         )
@@ -152,8 +150,9 @@ def create_object():
         print(f"✅ 객체 생성 완료: {new_object.to_dict()}")
         
         return jsonify({
-            'message': 'Object created successfully',
-            'object': new_object.to_dict()
+            'success': True,
+            'data': new_object.to_dict(),
+            'message': 'Object created successfully'
         }), 201
         
     except Exception as e:
@@ -168,7 +167,11 @@ def get_objects():
     user_id = get_jwt_identity()
     objects = Object.query.filter_by(user_id=user_id).order_by(Object.created_at.desc()).all()
     
-    return jsonify([obj.to_dict() for obj in objects])
+    return jsonify({
+        'success': True,
+        'data': [obj.to_dict() for obj in objects],
+        'message': 'Objects retrieved successfully'
+    })
 
 @objects_bp.route('/<int:object_id>', methods=['GET'])
 @jwt_required()
@@ -501,6 +504,25 @@ def get_all_user_detections():
     return jsonify({
         'success': True,
         'data': all_detections
+    })
+
+@objects_bp.route('/<int:object_id>/detections', methods=['GET'])
+@jwt_required()
+def get_object_detections(object_id):
+    """특정 객체의 모든 탐지 정보 조회"""
+    user_id = get_jwt_identity()
+    obj = Object.query.filter_by(id=object_id, user_id=user_id).first()
+    
+    if not obj:
+        return jsonify({'error': 'Object not found'}), 404
+    
+    detections = DetectionResult.query.filter_by(object_id=object_id).order_by(DetectionResult.created_at.desc()).all()
+    
+    detection_list = [detection.to_dict() for detection in detections]
+    
+    return jsonify({
+        'success': True,
+        'data': detection_list
     })
 
 @objects_bp.route('/<int:object_id>/detections/<int:detection_id>', methods=['GET'])

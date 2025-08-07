@@ -9,7 +9,7 @@ export type LoginRequest = {
 };
 
 export type RegisterRequest = {
-  name: string;
+  username: string;
   password: string;
   email: string;
 };
@@ -97,8 +97,11 @@ export class AuthService {
       const refreshToken = await AsyncStorage.getItem('refreshToken');
     
       if (!refreshToken) {
+        console.log('❌ Refresh token이 없습니다.');
         throw new Error('Refresh token not found');
       }
+      
+      console.log('🔄 토큰 갱신 시도 중...');
       const response = await apiClient.post<AuthResponse>(
         API_ENDPOINTS.AUTH.REFRESH.path,
         {
@@ -108,14 +111,18 @@ export class AuthService {
       
       if (response.access_token) {
         await this.saveToken(response.access_token);
+        console.log('✅ 토큰 갱신 성공');
       }
       if (response.refresh_token) {
         await AsyncStorage.setItem('refreshToken', response.refresh_token);
+        console.log('✅ Refresh token 업데이트');
       }
       
       return response;
     } catch (error) {
       console.error('❌ 토큰 갱신 실패:', error);
+      // 토큰 갱신 실패 시 모든 토큰 제거
+      await this.logout();
       throw error;
     }
   }
@@ -123,8 +130,10 @@ export class AuthService {
   // 로그아웃
   async logout(): Promise<void> {
     try {
-      // 토큰 제거
+      // 토큰들 제거
       await this.removeToken();
+      await AsyncStorage.removeItem('refreshToken');
+      console.log('✅ 모든 토큰이 성공적으로 제거되었습니다.');
     } catch (error) {
       console.error('❌ 로그아웃 실패:', error);
       throw error;

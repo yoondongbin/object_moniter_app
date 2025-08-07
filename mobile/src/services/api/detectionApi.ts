@@ -50,6 +50,28 @@ export class DetectionService {
     }
   }
 
+  // 특정 객체의 탐지 목록 불러오기
+  async getDetectionsByObject(objectId: number): Promise<any> {
+    try {
+      const response = await apiClient.get(`/api/objects/${objectId}/detections/`);
+      return response;
+    } catch (error) {
+      console.error(`Failed to fetch detections for object ${objectId}:`, error);
+      throw error;
+    }
+  }
+
+  // 특정 객체의 탐지 통계 불러오기
+  async getDetectionStatsByObject(objectId: number): Promise<any> {
+    try {
+      const response = await apiClient.get(`/api/objects/${objectId}/detections/stats/`);
+      return response;
+    } catch (error) {
+      console.error(`Failed to fetch detection stats for object ${objectId}:`, error);
+      throw error;
+    }
+  }
+
   // 특정 탐지 상세 조회
   async getDetectionById(detectionId: number): Promise<any> {
     try {

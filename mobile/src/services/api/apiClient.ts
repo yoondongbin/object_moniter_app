@@ -1,11 +1,17 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 import { getApiConfig, AUTH_REQUIRED_PATTERNS } from '../../config/apiConfig';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { authService } from './authApi';
 
 // API 클라이언트 클래스
 class ApiClient {
   private client: AxiosInstance;
   private baseURL: string;
+  private isRefreshing = false;
+  private failedQueue: Array<{
+    resolve: (value?: any) => void;
+    reject: (error?: any) => void;
+  }> = [];
 
   constructor() {
     const apiConfig = getApiConfig();
@@ -21,7 +27,7 @@ class ApiClient {
     });
 
     // 요청 인터셉터
-      this.client.interceptors.request.use(
+    this.client.interceptors.request.use(
       async (requestConfig) => {
         // 인증이 필요한 엔드포인트인지 확인
         const requiresAuth = AUTH_REQUIRED_PATTERNS.some(endpoint => 
@@ -63,13 +69,63 @@ class ApiClient {
         console.log('API Response:', response.status, response.config.url);
         return response;
       },
-      (error) => {
+      async (error) => {
         console.error('API Response Error:', error.response?.status, error.response?.data);
         
+        const originalRequest = error.config;
+        
         // 401 에러 처리 (토큰 만료 등)
-        if (error.response?.status === 401) {
-          // 토큰 갱신 로직
-          // await this.refreshToken();
+        if (error.response?.status === 401 && !originalRequest._retry) {
+          if (this.isRefreshing) {
+            // 이미 토큰 갱신 중이면 대기
+            return new Promise((resolve, reject) => {
+              this.failedQueue.push({ resolve, reject });
+            }).then(() => {
+              return this.client(originalRequest);
+            }).catch((err) => {
+              return Promise.reject(err);
+            });
+          }
+
+          originalRequest._retry = true;
+          this.isRefreshing = true;
+
+          try {
+            // 토큰 갱신 시도
+            await authService.refreshToken();
+            
+            // 대기 중인 요청들 처리
+            this.failedQueue.forEach(({ resolve }) => {
+              resolve();
+            });
+            this.failedQueue = [];
+            
+            // 원래 요청 재시도
+            const newToken = await AsyncStorage.getItem('accessToken');
+            if (newToken) {
+              originalRequest.headers.Authorization = `Bearer ${newToken}`;
+            }
+            
+            return this.client(originalRequest);
+          } catch (refreshError) {
+            console.error('토큰 갱신 실패:', refreshError);
+            
+            // 대기 중인 요청들 실패 처리
+            this.failedQueue.forEach(({ reject }) => {
+              reject(refreshError);
+            });
+            this.failedQueue = [];
+            
+            // 만료된 토큰들 삭제
+            await authService.logout();
+            
+            // 로그아웃 이벤트 발생 (AppNavigator에서 감지)
+            console.log('🔐 토큰 만료로 인한 자동 로그아웃');
+            
+            return Promise.reject(refreshError);
+          } finally {
+            this.isRefreshing = false;
+          }
         }
         
         return Promise.reject(error);

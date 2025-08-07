@@ -1,10 +1,12 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, ActivityIndicator, ScrollView } from 'react-native';
+import React, { useEffect, useState, useCallback } from 'react';
+import { View, Text, ActivityIndicator, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import styles from '../styles/StatsScreen.styles';
 import DateRangeSelector from '../components/DateRangeSelector';
 import Chart from '../components/Chart';
 import { DetectionService, type DetectionItem } from '../services/api/detectionApi';
-import { getStatsByRange } from '../utils/statsUtils';  // utils 함수 import
+import { ObjectService, type ObjectData } from '../services/api/objectApi';
+import { getStatsByRange } from '../utils/statsUtils';
 import { CHART_COLORS, getResponsiveChartSize } from '../constants/chartConstants';
 import dayjs from 'dayjs';
 import 'dayjs/locale/ko';
@@ -17,46 +19,102 @@ const CHART_HEIGHT = CHART_SIZE.height;
 
 export default function StatsScreen() {
   const [detections, setDetections] = useState<DetectionItem[]>([]);
+  const [objects, setObjects] = useState<ObjectData[]>([]);
+  const [selectedObject, setSelectedObject] = useState<ObjectData | null>(null);
   const [loading, setLoading] = useState(false);
+  const [objectsLoading, setObjectsLoading] = useState(false);
   
-  // 날짜 범위 상태 추가
   const [startDate, setStartDate] = useState<Date>(() => {
-    // 기본값: 1주일 전부터 오늘까지
     return dayjs().subtract(7, 'day').toDate();
   });
   const [endDate, setEndDate] = useState<Date>(() => {
     return dayjs().toDate();
   });
 
-  useEffect(() => {
-    const loadDetections = async () => {
-      try {
-        setLoading(true);
-        const detectionService = DetectionService.getInstance();
-        const response = await detectionService.getDetections();
-        
+  // 객체 목록 로드
+  const loadObjects = useCallback(async () => {
+    try {
+      setObjectsLoading(true);
+      const objectService = ObjectService.getInstance();
+      const response = await objectService.getObjects();
+      
+      if (response.success && Array.isArray(response.data)) {
+        setObjects(response.data);
+        if (response.data.length > 0 && !selectedObject) {
+          setSelectedObject(response.data[0]);
+        }
+      }
+    } catch (error) {
+      console.error('객체 목록 로드 실패:', error);
+      Alert.alert('오류', '객체 목록을 불러오는데 실패했습니다.');
+    } finally {
+      setObjectsLoading(false);
+    }
+  }, [selectedObject]);
+
+  // 탐지 데이터 로드
+  const loadDetections = useCallback(async () => {
+    try {
+      setLoading(true);
+      const detectionService = DetectionService.getInstance();
+      
+      if (selectedObject) {
+        // 특정 객체의 탐지 데이터 가져오기
+        const response = await detectionService.getDetectionsByObject(selectedObject.id!);
         if (response.success && Array.isArray(response.data)) {
           setDetections(response.data);
+        } else if (Array.isArray(response)) {
+          setDetections(response);
+        } else {
+          setDetections([]);
         }
-      } catch (error) {
-        console.error('탐지 데이터 로드 실패:', error);
-      } finally {
-        setLoading(false);
+      } else {
+        // 전체 탐지 데이터 가져오기
+        const response = await detectionService.getDetections();
+        if (response.success && Array.isArray(response.data)) {
+          setDetections(response.data);
+        } else if (Array.isArray(response)) {
+          setDetections(response);
+        } else {
+          setDetections([]);
+        }
       }
-    };
+    } catch (error) {
+      console.error('탐지 데이터 로드 실패:', error);
+      setDetections([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedObject]);
 
-    loadDetections();
-  }, []);
+  // 화면이 포커스될 때마다 데이터를 새로고침
+  useFocusEffect(
+    useCallback(() => {
+      loadObjects();
+    }, [loadObjects])
+  );
+
+  // 선택된 객체가 변경될 때 탐지 데이터 다시 로드
+  useEffect(() => {
+    if (selectedObject) {
+      loadDetections();
+    }
+  }, [selectedObject, loadDetections]);
+
+  // 선택된 객체가 변경될 때 탐지 데이터 필터링
+  const filteredDetections = selectedObject 
+    ? detections.filter(detection => detection.object_id === selectedObject.id)
+    : detections;
 
   // 날짜 범위 변경 시 차트 데이터 업데이트
   useEffect(() => {
-    if (detections.length > 0) {
+    if (filteredDetections.length > 0) {
       console.log(`날짜 범위 업데이트: ${dayjs(startDate).format('YYYY-MM-DD')} ~ ${dayjs(endDate).format('YYYY-MM-DD')}`);
     }
-  }, [startDate, endDate, detections]);
+  }, [startDate, endDate, filteredDetections]);
 
   // 선택된 날짜 범위에 따른 데이터 생성
-  const statsData = getStatsByRange(detections, startDate, endDate);
+  const statsData = getStatsByRange(filteredDetections, startDate, endDate);
 
   // 안전한 차트 데이터 생성
   const createSafeChartData = () => {
@@ -94,6 +152,11 @@ export default function StatsScreen() {
 
   const chartData = createSafeChartData();
 
+  // 객체 선택 핸들러
+  const handleObjectSelect = (object: ObjectData) => {
+    setSelectedObject(object);
+  };
+
   return (
     <View style={styles.container}>
       {/* 고정 헤더 */}
@@ -109,6 +172,40 @@ export default function StatsScreen() {
         bounces={true}
         nestedScrollEnabled={true}
       >
+        {/* 객체 선택 영역 */}
+        <View style={styles.objectSelectorContainer}>
+          <Text style={styles.sectionTitle}>객체 선택</Text>
+          {objectsLoading ? (
+            <ActivityIndicator size="small" color="#8B5CF6" />
+          ) : objects.length > 0 ? (
+            <ScrollView 
+              horizontal 
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.objectListContainer}
+            >
+              {objects.map((object) => (
+                <TouchableOpacity
+                  key={object.id}
+                  style={[
+                    styles.objectItem,
+                    selectedObject?.id === object.id && styles.selectedObjectItem
+                  ]}
+                  onPress={() => handleObjectSelect(object)}
+                >
+                  <Text style={[
+                    styles.objectItemText,
+                    selectedObject?.id === object.id && styles.selectedObjectItemText
+                  ]}>
+                    {object.name}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          ) : (
+            <Text style={styles.noObjectsText}>등록된 객체가 없습니다</Text>
+          )}
+        </View>
+
         {/* 날짜 선택 영역 */}
         <View style={styles.dateRangeContainer}>
           <DateRangeSelector
@@ -129,7 +226,9 @@ export default function StatsScreen() {
           <>
             {/* 차트 영역 */}
             <View style={styles.chartContainer}>
-              <Text style={styles.chartTitle}>탐지 현황 추이</Text>
+              <Text style={styles.chartTitle}>
+                {selectedObject ? `${selectedObject.name} 탐지 현황` : '전체 탐지 현황'}
+              </Text>
               <Text style={styles.chartSubtitle}>
                 {dayjs(startDate).format('YYYY.MM.DD')} ~ {dayjs(endDate).format('YYYY.MM.DD')}
               </Text>
@@ -137,7 +236,7 @@ export default function StatsScreen() {
                 <Chart 
                   data={chartData} 
                   type="line" 
-                  showLegend={detections.length > 0}
+                  showLegend={filteredDetections.length > 0}
                   legendLabels={['전체 탐지', '위험 탐지']}
                   chartWidth={CHART_WIDTH - 40} // 패딩 고려
                   chartHeight={CHART_HEIGHT}
@@ -169,11 +268,11 @@ export default function StatsScreen() {
             </View>
 
             {/* 데이터가 없을 때 안내 메시지 */}
-            {detections.length === 0 && (
+            {filteredDetections.length === 0 && (
               <View style={styles.emptyContainer}>
                 <Text style={styles.emptyTitle}>통계 데이터가 없습니다</Text>
                 <Text style={styles.emptySubtitle}>
-                  객체 탐지를 실행하면 여기서{'\n'}
+                  {selectedObject ? `${selectedObject.name}에 대한` : ''} 객체 탐지를 실행하면 여기서{'\n'}
                   다양한 통계를 확인할 수 있습니다
                 </Text>
                 <Text style={styles.emptyDescription}>

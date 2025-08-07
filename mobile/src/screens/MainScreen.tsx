@@ -5,6 +5,7 @@ import { DetectionService } from '../services/api/detectionApi';
 import DetectionSummaryCard from '../components/DetectionSummaryCard';
 import AlertSummaryCard from '../components/AlertSummaryCard';
 import { NotificationService } from '../services/api/notificationApi';
+import { AuthService } from '../services/api/authApi';
 import { sendDetectionNotification, sendDangerLevelNotification } from '../utils/alramUtils';
 
 const MainScreen = ({ navigation }: any) => {
@@ -106,6 +107,33 @@ const MainScreen = ({ navigation }: any) => {
     }
   };
 
+  const handleLogout = async () => {
+    Alert.alert('로그아웃', '정말로 로그아웃하시겠습니까?', [
+      { text: '취소', style: 'cancel' },
+      {
+        text: '로그아웃',
+        onPress: async () => {
+          try {
+            const authService = AuthService.getInstance();
+            await authService.logout();
+            
+            // 토큰이 제대로 제거되었는지 확인
+            const remainingToken = await authService.getCurrentToken();
+            if (!remainingToken) {
+              console.log('✅ 로그아웃 완료 - AppNavigator에서 자동으로 화면 전환');
+              // AppNavigator에서 토큰 상태 변화를 감지하여 자동으로 로그인 화면으로 이동
+            } else {
+              Alert.alert('오류', '로그아웃 중 오류가 발생했습니다.');
+            }
+          } catch (error) {
+            console.error('Logout error:', error);
+            Alert.alert('오류', '로그아웃 중 오류가 발생했습니다.');
+          }
+        },
+      },
+    ]);
+  };
+
   return (
     <ScrollView 
       style={styles.container} 
@@ -129,6 +157,14 @@ const MainScreen = ({ navigation }: any) => {
       directionalLockEnabled={true}
       pagingEnabled={false}
     >
+      {/* 헤더 */}
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>객체 탐지 앱</Text>
+        <TouchableOpacity onPress={handleLogout}>
+          <Text style={styles.logoutButton}>로그아웃</Text>
+        </TouchableOpacity>
+      </View>
+
       {/* 객체 탐지 카드 */}
       <View style={styles.imageSelectionCard}>
         <TouchableOpacity

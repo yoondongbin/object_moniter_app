@@ -93,6 +93,59 @@ const StatsScreenStyles = StyleSheet.create({
     borderColor: Colors.border,
   },
 
+  // 객체 선택 영역
+  objectSelectorContainer: {
+    backgroundColor: Colors.white,
+    marginHorizontal: 16,
+    marginBottom: 16,
+    padding: 16,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.textPrimary,
+    marginBottom: 12,
+  },
+  objectListContainer: {
+    paddingRight: 16,
+  },
+  objectItem: {
+    backgroundColor: Colors.background,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    marginRight: 8,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  selectedObjectItem: {
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
+  },
+  objectItemText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: Colors.textPrimary,
+  },
+  selectedObjectItemText: {
+    color: Colors.white,
+    fontWeight: '600',
+  },
+  noObjectsText: {
+    fontSize: 14,
+    color: Colors.textLight,
+    textAlign: 'center',
+    fontStyle: 'italic',
+  },
+
   // 로딩 상태
   loadingContainer: {
     flex: 1,
