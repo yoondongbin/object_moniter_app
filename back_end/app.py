@@ -47,9 +47,6 @@ def create_database():
             if app_user != 'root':
                 cursor.execute(f"GRANT ALL PRIVILEGES ON {database}.* TO '{app_user}'@'localhost'")
                 cursor.execute("FLUSH PRIVILEGES")
-                print(f"✅ 사용자 '{app_user}'에게 데이터베이스 권한이 부여되었습니다.")
-        else:
-            print(f"✅ 데이터베이스 '{database}'가 이미 존재합니다.")
         
         cursor.close()
         connection.close()

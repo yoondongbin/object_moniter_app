@@ -134,7 +134,7 @@ function MainTabNavigator() {
       <Tab.Screen
         name="Objects"
         component={ObjectManagementStack}
-        options={{ title: '객체 관리' }}
+        options={{ title: '모니터 관리' }}
       />
       <Tab.Screen
         name="Stats"

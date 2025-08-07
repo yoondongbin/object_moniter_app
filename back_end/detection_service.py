@@ -73,21 +73,17 @@ class ObjectDetectionService:
 
                 if detected_objects:
                     for i, obj in enumerate(detected_objects):
-                        print(f"🖼️ 객체 {i+1} 처리 중...")
                         
                         image_path = detection_result.get('image')
-                        print(f"🖼️ 이미지 경로: {image_path}")
                         
                         # 상대 경로 생성 (DB 저장용)
                         relative_image_path = f"detections/{object_id}_{i}_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.jpg"
                         full_image_path = os.path.join(os.path.dirname(__file__), "uploads", relative_image_path)
                         
                         if not image_path:
-                            print("⚠️ 이미지 경로가 없어서 백업 처리")
                             image_data = detection_result.get('image', '')
                             
                             if not image_data:
-                                print("❌ image_data가 없습니다. 기본 이미지 경로 사용")
                                 os.makedirs(os.path.dirname(full_image_path), exist_ok=True)
                                 # 빈 이미지 파일 생성 (실제로는 기본 이미지를 복사해야 함)
                             else:
@@ -101,14 +97,12 @@ class ObjectDetectionService:
 
                                 os.makedirs(os.path.dirname(full_image_path), exist_ok=True)
                                 os.rename(temp_file.name, full_image_path)
-                                print(f"💾 백업 이미지 저장: {full_image_path}")
                         else:
                             # 기존 이미지 경로에서 파일을 복사
                             if os.path.exists(image_path):
                                 import shutil
                                 os.makedirs(os.path.dirname(full_image_path), exist_ok=True)
                                 shutil.copy2(image_path, full_image_path)
-                                print(f"💾 이미지 복사 완료: {image_path} -> {full_image_path}")
 
                         print(f" 탐지 결과 객체 생성: class={obj['class']}, confidence={obj['confidence']}")
                         detection_result_obj = DetectionResult(
@@ -138,13 +132,11 @@ class ObjectDetectionService:
                             )
                             db.session.add(notification)
                             print(f"✅ 알림 생성됨: detection_id={detection_result_obj.id}")
-                print("데이터베이스 커밋 시도...")
                 db.session.commit()
                 print(f"✅ 탐지 결과 저장 완료: {len(detected_objects)}개 객체")
 
             except Exception as e:
                 db.session.rollback()
-                print(f"❌ 데이터베이스 저장 오류: {str(e)}")
 
             return {
                 'danger_level': danger_level,

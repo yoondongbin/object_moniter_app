@@ -34,12 +34,10 @@ export class DetectionService {
     return DetectionService.instance;
   }
 
-  // objectId 설정 메서드 추가
   public setObjectId(objectId: number): void {
     this.objectId = objectId;
   }
 
-  // 특정 객체의 탐지 목록 불러오기
   async getDetections(): Promise<any> {
     try {
       const response = await apiClient.get(API_ENDPOINTS.DETECTIONS.LIST().path);
@@ -50,7 +48,6 @@ export class DetectionService {
     }
   }
 
-  // 특정 객체의 탐지 목록 불러오기
   async getDetectionsByObject(objectId: number): Promise<any> {
     try {
       const response = await apiClient.get(`/api/objects/${objectId}/detections/`);
@@ -61,7 +58,6 @@ export class DetectionService {
     }
   }
 
-  // 특정 객체의 탐지 통계 불러오기
   async getDetectionStatsByObject(objectId: number): Promise<any> {
     try {
       const response = await apiClient.get(`/api/objects/${objectId}/detections/stats/`);
@@ -72,7 +68,6 @@ export class DetectionService {
     }
   }
 
-  // 특정 탐지 상세 조회
   async getDetectionById(detectionId: number): Promise<any> {
     try {
       const response = await apiClient.get(API_ENDPOINTS.DETECTIONS.DETAIL(this.objectId, detectionId).path);
@@ -83,14 +78,12 @@ export class DetectionService {
     }
   }
 
-  // 새로운 탐지 생성 (알림 포함)
   async createDetection(): Promise<any> {
     try {
       const response = await apiClient.post(
         API_ENDPOINTS.DETECTIONS.DETECT(this.objectId).path,
       );
       
-      // 탐지 결과에 따라 알림 전송
       if (response && typeof response === 'object' && 'data' in response) {
         const responseData = response as any;
         if (responseData.data && responseData.data.detection_result) {

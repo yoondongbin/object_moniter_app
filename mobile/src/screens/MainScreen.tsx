@@ -64,7 +64,6 @@ const MainScreen = ({ navigation }: any) => {
       
       const detectionResult = await detectionService.createDetection();
       
-      // 서버 데이터 저장을 위한 짧은 지연
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       await Promise.all([

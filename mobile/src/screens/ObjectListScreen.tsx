@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
-  StyleSheet,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { ObjectService, type ObjectData } from '../services/api/objectApi';
@@ -154,7 +153,7 @@ const ObjectListScreen = ({ navigation }: any) => {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={Colors.primary} />
-        <Text style={styles.loadingText}>객체 목록을 불러오는 중...</Text>
+        <Text style={styles.loadingText}>모니터 목록을 불러오는 중...</Text>
       </View>
     );
   }
@@ -162,18 +161,18 @@ const ObjectListScreen = ({ navigation }: any) => {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>객체 관리</Text>
+        <Text style={styles.title}>모니터 관리</Text>
         <TouchableOpacity style={styles.addButton} onPress={handleCreateObject}>
-          <Text style={styles.addButtonText}>+ 새 객체</Text>
+          <Text style={styles.addButtonText}>+ 새 모니터</Text>
         </TouchableOpacity>
       </View>
 
       {objects.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyTitle}>등록된 객체가 없습니다</Text>
-          <Text style={styles.emptySubtitle}>새로운 객체를 추가해보세요</Text>
+          <Text style={styles.emptyTitle}>등록된 모니터가 없습니다</Text>
+          <Text style={styles.emptySubtitle}>새로운 모니터를 추가해보세요</Text>
           <TouchableOpacity style={styles.emptyAddButton} onPress={handleCreateObject}>
-            <Text style={styles.emptyAddButtonText}>객체 추가하기</Text>
+            <Text style={styles.emptyAddButtonText}>모니터 추가</Text>
           </TouchableOpacity>
         </View>
       ) : (
