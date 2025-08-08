@@ -4,12 +4,11 @@ import {
   Text,
   TouchableOpacity,
   Modal,
-  StyleSheet,
-  Dimensions,
   Alert,
 } from 'react-native';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isWithinInterval, addMonths, subMonths } from 'date-fns';
 import { ko } from 'date-fns/locale';
+import styles from '../styles/CalendarPicker.styles';
 
 interface CalendarPickerProps {
   isVisible: boolean;
@@ -18,10 +17,6 @@ interface CalendarPickerProps {
   initialStartDate?: Date;
   initialEndDate?: Date;
 }
-
-const { width } = Dimensions.get('window');
-const CALENDAR_WIDTH = width * 0.9;
-const DAY_SIZE = (CALENDAR_WIDTH - 40) / 7;
 
 const CalendarPicker: React.FC<CalendarPickerProps> = ({
   isVisible,
@@ -123,14 +118,37 @@ const CalendarPicker: React.FC<CalendarPickerProps> = ({
     const isInRange = isDateInRange(date);
     const isCurrentMonth = isDateInCurrentMonth(date);
     const isToday = isSameDay(date, new Date());
+    const isStartDate = selectedStartDate && isSameDay(date, selectedStartDate);
+    const isEndDate = selectedEndDate && isSameDay(date, selectedEndDate);
+
+    // 범위 내 날짜의 위치에 따른 스타일 결정
+    let rangeStyle = null;
+    if (isInRange && !isSelected) {
+      const dayOfWeek = date.getDay();
+      const isFirstInRow = dayOfWeek === 0;
+      const isLastInRow = dayOfWeek === 6;
+      
+      if (isStartDate) {
+        rangeStyle = styles.rangeDayStart;
+      } else if (isEndDate) {
+        rangeStyle = styles.rangeDayEnd;
+      } else if (isFirstInRow) {
+        rangeStyle = styles.rangeDayLeft;
+      } else if (isLastInRow) {
+        rangeStyle = styles.rangeDayRight;
+      } else {
+        rangeStyle = styles.rangeDayMiddle;
+      }
+    }
 
     return (
       <TouchableOpacity
         key={index}
         style={[
           styles.dayButton,
-          isSelected && styles.selectedDay,
-          isInRange && !isSelected && styles.rangeDay,
+          isStartDate && styles.startDate,
+          isEndDate && styles.endDate,
+          isInRange && !isSelected && rangeStyle,
           isToday && styles.today,
         ]}
         onPress={() => handleDatePress(date)}
@@ -139,7 +157,9 @@ const CalendarPicker: React.FC<CalendarPickerProps> = ({
           style={[
             styles.dayText,
             !isCurrentMonth && styles.otherMonthDay,
-            isSelected && styles.selectedDayText,
+            isStartDate && styles.startDateText,
+            isEndDate && styles.endDateText,
+            isInRange && !isSelected && styles.rangeDayText,
             isToday && styles.todayText,
           ]}
         >
@@ -205,7 +225,13 @@ const CalendarPicker: React.FC<CalendarPickerProps> = ({
 
           {/* 캘린더 그리드 */}
           <View style={styles.calendarGrid}>
-            {days.map((date, index) => renderDay(date, index))}
+            {Array.from({ length: Math.ceil(days.length / 7) }, (_, rowIndex) => (
+              <View key={rowIndex} style={styles.calendarRow}>
+                {days.slice(rowIndex * 7, (rowIndex + 1) * 7).map((date, colIndex) => 
+                  renderDay(date, rowIndex * 7 + colIndex)
+                )}
+              </View>
+            ))}
           </View>
 
           {/* 선택된 기간 표시 */}
@@ -231,158 +257,5 @@ const CalendarPicker: React.FC<CalendarPickerProps> = ({
     </Modal>
   );
 };
-
-const styles = StyleSheet.create({
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContent: {
-    backgroundColor: 'white',
-    borderRadius: 20,
-    padding: 20,
-    width: CALENDAR_WIDTH,
-    maxHeight: '80%',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  closeButton: {
-    padding: 5,
-  },
-  closeButtonText: {
-    fontSize: 20,
-    color: '#666',
-  },
-  monthNavigation: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  navButton: {
-    padding: 10,
-  },
-  navButtonText: {
-    fontSize: 20,
-    color: '#8B5CF6',
-    fontWeight: 'bold',
-  },
-  monthText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  weekHeader: {
-    flexDirection: 'row',
-    marginBottom: 10,
-  },
-  weekDayHeader: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  weekDayText: {
-    fontSize: 12,
-    color: '#666',
-    fontWeight: '500',
-  },
-  sundayText: {
-    color: '#FF6B6B',
-  },
-  saturdayText: {
-    color: '#4ECDC4',
-  },
-  calendarGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginBottom: 20,
-  },
-  dayButton: {
-    width: DAY_SIZE,
-    height: DAY_SIZE,
-    justifyContent: 'center',
-    alignItems: 'center',
-    margin: 1,
-  },
-  dayText: {
-    fontSize: 14,
-    color: '#333',
-  },
-  otherMonthDay: {
-    color: '#CCC',
-  },
-  selectedDay: {
-    backgroundColor: '#8B5CF6',
-    borderRadius: DAY_SIZE / 2,
-  },
-  selectedDayText: {
-    color: 'white',
-    fontWeight: 'bold',
-  },
-  rangeDay: {
-    backgroundColor: '#E9D5FF',
-  },
-  today: {
-    borderWidth: 2,
-    borderColor: '#8B5CF6',
-    borderRadius: DAY_SIZE / 2,
-  },
-  todayText: {
-    color: '#8B5CF6',
-    fontWeight: 'bold',
-  },
-  selectedRange: {
-    alignItems: 'center',
-    marginBottom: 20,
-    padding: 15,
-    backgroundColor: '#F8F9FA',
-    borderRadius: 10,
-  },
-  selectedRangeText: {
-    fontSize: 16,
-    color: '#333',
-    fontWeight: '500',
-  },
-  buttonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  cancelButton: {
-    flex: 1,
-    padding: 15,
-    marginRight: 10,
-    backgroundColor: '#F8F9FA',
-    borderRadius: 10,
-    alignItems: 'center',
-  },
-  cancelButtonText: {
-    color: '#666',
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  confirmButton: {
-    flex: 1,
-    padding: 15,
-    marginLeft: 10,
-    backgroundColor: '#8B5CF6',
-    borderRadius: 10,
-    alignItems: 'center',
-  },
-  confirmButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '500',
-  },
-});
 
 export default CalendarPicker; 

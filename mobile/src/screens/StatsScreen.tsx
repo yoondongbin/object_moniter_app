@@ -159,10 +159,6 @@ export default function StatsScreen() {
 
   return (
     <View style={styles.container}>
-      {/* 고정 헤더 */}
-      <View style={styles.header}>
-        <Text style={styles.title}>통계</Text>
-      </View>
 
       {/* 스크롤 가능한 콘텐츠 */}
       <ScrollView 
