@@ -1,5 +1,5 @@
 import dayjs from 'dayjs';
-import { DetectionItem } from '../services/api/detectionApi';
+import { DetectionItem } from '../services/api';
 
 export interface DailyStats {
   date: string;
@@ -26,7 +26,28 @@ export const groupDetectionsByDate = (detections: DetectionItem[]): DailyStats[]
     }
     
     acc[date].count += 1;
-    acc[date].danger_levels[detection.danger_level] += 1;
+    
+    // risk_level 필드 사용 - 더 안전한 방법으로 처리
+    const riskLevel = detection.risk_level || 'safe';
+    
+    // 타입 안전한 방법으로 danger_levels 업데이트
+    switch (riskLevel) {
+      case 'safe':
+        acc[date].danger_levels.safe += 1;
+        break;
+      case 'low':
+        acc[date].danger_levels.low += 1;
+        break;
+      case 'medium':
+        acc[date].danger_levels.medium += 1;
+        break;
+      case 'high':
+        acc[date].danger_levels.high += 1;
+        break;
+      default:
+        acc[date].danger_levels.safe += 1; // 기본값으로 safe 처리
+        break;
+    }
     
     return acc;
   }, {} as Record<string, DailyStats>);

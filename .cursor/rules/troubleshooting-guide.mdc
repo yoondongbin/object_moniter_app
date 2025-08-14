@@ -1,0 +1,449 @@
+---
+description: 프로젝트 개발 및 배포 시 발생하는 일반적인 문제 해결 가이드
+---
+
+# 문제 해결 가이드 (Troubleshooting Guide)
+
+## 🚨 일반적인 문제 및 해결책
+
+### React Native 빌드 문제
+
+#### Android 빌드 실패
+```bash
+# 문제: Gradle 빌드 실패, CMake 에러
+# 해결책: 캐시 정리 및 의존성 재설치
+
+cd mobile/android
+./gradlew clean
+./gradlew cleanBuildCache
+rm -rf .gradle
+rm -rf app/build
+
+cd ..
+rm -rf node_modules
+yarn install
+
+# React Native 캐시 정리
+npx react-native start --reset-cache
+```
+
+#### iOS 빌드 실패
+```bash
+# 문제: CocoaPods 설치 실패, Xcode 빌드 에러
+# 해결책: iOS 환경 완전 재설정
+
+cd mobile
+rm -rf ios/build
+rm -rf ios/Pods
+rm -f ios/Podfile.lock
+
+# CocoaPods 재설치
+npx pod-install ios
+
+# 또는 수동 설치
+cd ios
+pod deintegrate
+pod install
+```
+
+#### Metro 번들러 문제
+```bash
+# 문제: Metro 서버 시작 실패, 번들링 에러
+# 해결책: Metro 캐시 정리
+
+npx react-native start --reset-cache
+# 또는
+rm -rf /tmp/metro-*
+rm -rf node_modules/.cache
+```
+
+### API 통신 문제
+
+#### 401 Unauthorized 에러
+```typescript
+// 문제: JWT 토큰 만료 또는 잘못된 토큰
+// 해결책: 토큰 상태 확인 및 갱신
+
+// 1. 토큰 확인
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const checkTokens = async () => {
+  const accessToken = await AsyncStorage.getItem('access_token');
+  const refreshToken = await AsyncStorage.getItem('refresh_token');
+  
+  console.log('Access Token:', accessToken ? '존재함' : '없음');
+  console.log('Refresh Token:', refreshToken ? '존재함' : '없음');
+};
+
+// 2. 토큰 초기화 (로그아웃 후 재로그인)
+const clearTokensAndRelogin = async () => {
+  await AsyncStorage.multiRemove(['access_token', 'refresh_token']);
+  // 로그인 화면으로 이동
+};
+```
+
+#### Network Request Failed
+```typescript
+// 문제: 네트워크 연결 실패, API 서버 접근 불가
+// 해결책: 네트워크 및 API 설정 확인
+
+// 1. 네트워크 상태 확인
+import NetInfo from '@react-native-community/netinfo';
+
+NetInfo.fetch().then(state => {
+  console.log('Connection type:', state.type);
+  console.log('Is connected:', state.isConnected);
+});
+
+// 2. API URL 확인
+import Config from 'react-native-config';
+console.log('API Base URL:', Config.API_BASE_URL);
+
+// 3. 로컬 서버 연결 테스트 (개발 환경)
+curl http://192.168.1.169:5010/api/health
+```
+
+#### CORS 에러
+```python
+# 문제: 브라우저에서 CORS 정책 위반
+# 해결책: Flask CORS 설정 확인
+
+# back_end/app.py
+from flask_cors import CORS
+
+app = Flask(__name__)
+CORS(app, origins=["*"])  # 개발용 - 프로덕션에서는 특정 도메인만 허용
+
+# 또는 특정 도메인만 허용
+CORS(app, origins=["http://localhost:3000", "https://yourdomain.com"])
+```
+
+### 데이터베이스 연결 문제
+
+#### MySQL 연결 실패
+```python
+# 문제: MySQL 서버 연결 불가
+# 해결책: 연결 설정 및 서버 상태 확인
+
+# 1. MySQL 서버 상태 확인
+# Docker 환경
+docker-compose ps
+docker-compose logs db
+
+# 로컬 MySQL
+brew services list | grep mysql
+sudo systemctl status mysql  # Linux
+
+# 2. 연결 정보 확인
+# back_end/config.py
+import os
+print(f"MySQL Host: {os.getenv('MYSQL_HOST')}")
+print(f"MySQL Port: {os.getenv('MYSQL_PORT')}")
+print(f"MySQL User: {os.getenv('MYSQL_USER')}")
+print(f"MySQL Database: {os.getenv('MYSQL_DATABASE')}")
+
+# 3. 직접 연결 테스트
+mysql -h localhost -P 3306 -u root -p object_monitor
+```
+
+#### 데이터베이스 테이블 생성 실패
+```python
+# 문제: SQLAlchemy 테이블 생성 실패
+# 해결책: 수동 테이블 생성 및 마이그레이션
+
+# Flask 앱 컨텍스트에서 실행
+from app import create_app
+from models import db
+
+app = create_app()
+with app.app_context():
+    # 모든 테이블 삭제 후 재생성
+    db.drop_all()
+    db.create_all()
+    
+    # 기본 데이터 생성
+    from app import create_default_user, create_default_objects
+    create_default_user()
+    create_default_objects()
+```
+
+### Docker 및 배포 문제
+
+#### Docker 이미지 빌드 실패
+```bash
+# 문제: Docker 빌드 중 의존성 설치 실패
+# 해결책: Dockerfile 및 의존성 확인
+
+# 1. Docker 캐시 정리
+docker system prune -a
+
+# 2. 빌드 로그 상세 확인
+docker build --no-cache --progress=plain -t object-monitor-backend ./back_end
+
+# 3. 의존성 문제 해결
+# requirements.txt 버전 고정
+pip freeze > requirements.txt
+
+# 4. 멀티스테이지 빌드 사용
+# Dockerfile에서 빌드 스테이지 분리
+```
+
+#### 컨테이너 실행 실패
+```bash
+# 문제: Docker 컨테이너 시작 실패
+# 해결책: 로그 확인 및 설정 검토
+
+# 1. 컨테이너 로그 확인
+docker-compose logs backend
+docker logs <container_id>
+
+# 2. 컨테이너 내부 접근
+docker-compose exec backend bash
+docker exec -it <container_id> bash
+
+# 3. 포트 충돌 확인
+lsof -i :5010
+netstat -tulpn | grep 5010
+
+# 4. 환경 변수 확인
+docker-compose exec backend env | grep MYSQL
+```
+
+### CI/CD 파이프라인 문제
+
+#### Jenkins 빌드 실패
+```groovy
+// 문제: Jenkins 파이프라인 실행 실패
+// 해결책: 단계별 디버깅 및 로그 확인
+
+// 1. 환경 변수 확인
+stage('Debug Environment') {
+    steps {
+        sh '''
+            echo "Current directory: $(pwd)"
+            echo "Node version: $(node --version)"
+            echo "Java version: $(java -version)"
+            echo "Android SDK: ${ANDROID_SDK_ROOT}"
+            env | sort
+        '''
+    }
+}
+
+// 2. 의존성 설치 확인
+stage('Verify Dependencies') {
+    steps {
+        sh '''
+            cd mobile
+            ls -la
+            cat package.json | head -20
+            yarn --version
+        '''
+    }
+}
+```
+
+#### Android 키스토어 문제
+```bash
+# 문제: 키스토어 파일 없음 또는 비밀번호 오류
+# 해결책: 키스토어 생성 및 설정 확인
+
+# 1. 새 키스토어 생성
+keytool -genkey -v -keystore my-upload-key.keystore -alias my-key-alias -keyalg RSA -keysize 2048 -validity 10000
+
+# 2. 키스토어 정보 확인
+keytool -list -keystore my-upload-key.keystore
+
+# 3. Jenkins Credentials 확인
+# Jenkins > Manage Credentials > Global > android_keystore 파일 업로드
+# ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_PASSWORD 설정 확인
+```
+
+### 성능 및 메모리 문제
+
+#### React Native 앱 크래시
+```typescript
+// 문제: 앱 실행 중 메모리 부족으로 크래시
+// 해결책: 메모리 사용량 최적화
+
+// 1. 이미지 최적화
+import { Image } from 'react-native';
+
+// 큰 이미지는 리사이즈
+<Image 
+  source={{uri: imageUrl}} 
+  style={{width: 200, height: 200}}
+  resizeMode="cover"
+/>
+
+// 2. 리스트 가상화
+import { FlatList } from 'react-native';
+
+<FlatList
+  data={largeDataSet}
+  renderItem={renderItem}
+  keyExtractor={item => item.id}
+  removeClippedSubviews={true}
+  maxToRenderPerBatch={10}
+  windowSize={10}
+/>
+
+// 3. 메모리 누수 방지
+useEffect(() => {
+  const subscription = someService.subscribe();
+  
+  return () => {
+    subscription.unsubscribe(); // 정리 함수 필수
+  };
+}, []);
+```
+
+#### Flask 서버 성능 저하
+```python
+# 문제: API 응답 속도 저하
+# 해결책: 데이터베이스 쿼리 최적화
+
+# 1. 쿼리 최적화
+from sqlalchemy.orm import joinedload
+
+# N+1 문제 해결
+objects = Object.query.options(
+    joinedload(Object.detections)
+).filter_by(user_id=user_id).all()
+
+# 2. 인덱스 추가
+class Detection(db.Model):
+    object_id = db.Column(db.Integer, db.ForeignKey('objects.id'), nullable=False, index=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+
+# 3. 캐싱 적용
+from flask_caching import Cache
+
+cache = Cache(app, config={'CACHE_TYPE': 'simple'})
+
+@cache.memoize(timeout=300)  # 5분 캐시
+def get_user_objects(user_id):
+    return Object.query.filter_by(user_id=user_id).all()
+```
+
+## 🔧 디버깅 도구 및 명령어
+
+### React Native 디버깅
+```bash
+# 1. 로그 확인
+# Android
+adb logcat | grep ReactNativeJS
+adb logcat -s ReactNativeJS,OkHttp
+
+# iOS
+xcrun simctl spawn booted log stream --predicate 'process == "mobile"'
+
+# 2. 네트워크 요청 모니터링
+# Flipper 사용 (개발 환경)
+# Chrome DevTools (웹 디버깅)
+
+# 3. 성능 프로파일링
+npx react-native run-android --variant=release
+# Flipper Performance 탭에서 확인
+```
+
+### Flask 디버깅
+```python
+# 1. 로깅 설정
+import logging
+
+logging.basicConfig(level=logging.DEBUG)
+app.logger.setLevel(logging.DEBUG)
+
+# 2. SQL 쿼리 로깅
+app.config['SQLALCHEMY_ECHO'] = True
+
+# 3. 요청/응답 로깅
+@app.before_request
+def log_request_info():
+    app.logger.debug('Request: %s %s', request.method, request.url)
+    app.logger.debug('Headers: %s', request.headers)
+    if request.data:
+        app.logger.debug('Body: %s', request.data)
+
+@app.after_request
+def log_response_info(response):
+    app.logger.debug('Response: %s', response.status)
+    return response
+```
+
+### Docker 디버깅
+```bash
+# 1. 컨테이너 상태 확인
+docker ps -a
+docker-compose ps
+
+# 2. 로그 실시간 모니터링
+docker-compose logs -f backend
+docker logs -f <container_name>
+
+# 3. 컨테이너 내부 접근
+docker-compose exec backend bash
+docker exec -it <container_id> /bin/sh
+
+# 4. 네트워크 연결 확인
+docker network ls
+docker network inspect <network_name>
+
+# 5. 볼륨 확인
+docker volume ls
+docker volume inspect <volume_name>
+```
+
+## 📞 긴급 상황 대응
+
+### 프로덕션 서버 다운
+```bash
+# 1. 서비스 상태 확인
+systemctl status docker
+docker-compose ps
+
+# 2. 로그 확인
+docker-compose logs --tail=100 backend
+journalctl -u docker -f
+
+# 3. 빠른 복구
+# 이전 버전으로 롤백
+docker-compose down
+docker-compose up -d
+
+# 4. 데이터베이스 백업 확인
+docker-compose exec db mysqldump -u root -p object_monitor > backup.sql
+```
+
+### 데이터 손실 위험
+```bash
+# 1. 즉시 백업
+docker-compose exec db mysqldump -u root -p --all-databases > emergency_backup.sql
+
+# 2. 데이터베이스 복구
+docker-compose exec -T db mysql -u root -p < backup.sql
+
+# 3. 파일 시스템 백업
+tar -czf uploads_backup.tar.gz back_end/uploads/
+```
+
+### 보안 사고 대응
+```bash
+# 1. 서비스 즉시 중단
+docker-compose down
+
+# 2. 로그 보존
+cp -r /var/log/docker/ /backup/incident_logs/
+docker-compose logs > incident_docker_logs.txt
+
+# 3. 비밀번호 및 키 변경
+# JWT 시크릿 키 변경
+# 데이터베이스 비밀번호 변경
+# API 키 재발급
+
+# 4. 보안 패치 적용 후 재시작
+docker-compose pull
+docker-compose up -d
+```
+
+이 가이드를 참조하여 개발 및 배포 과정에서 발생하는 문제들을 신속하게 해결할 수 있습니다. 문제가 지속되면 로그를 자세히 확인하고 단계별로 디버깅을 진행하세요.

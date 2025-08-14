@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- 개발/스테이징에서만 필요한 평문 HTTP 허용 대상 (에뮬레이터/로컬 IP) -->
+    <domain-config cleartextTrafficPermitted="true">
+        <!-- 에뮬레이터에서 호스트 Mac으로 접속할 때 사용하는 특별 주소 -->
+        <domain includeSubdomains="true">10.0.2.2</domain>
+        <!-- 로컬 네트워크 대역 사용 시 필요에 따라 유지/수정 -->
+        <domain includeSubdomains="true">192.168.1.0</domain>
+        <domain includeSubdomains="true">localhost</domain>
+    </domain-config>
+</network-security-config>
+
+

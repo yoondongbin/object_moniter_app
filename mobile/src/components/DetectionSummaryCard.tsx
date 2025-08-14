@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, Image } from 'react-native';
-import { DetectionItem } from '../services/api/detectionApi';
+import { DetectionItem, objectService } from '../services/api';
 import styles from '../styles/DetectionSummaryCard.styles';
-import { ObjectService } from '../services/api/objectApi';
 import { formatDateTime } from '../utils/dateUtils';
 
 type Props = {
@@ -19,28 +18,22 @@ export default function DetectionSummaryCard({
   isLastInRow = false 
 }: Props) {
   const [objectName, setObjectName] = useState<string>('Loading...');
-  const objectService = ObjectService.getInstance();
+  
   console.log(item);
+  
   useEffect(() => {
     const fetchObject = async () => {
       try {
-        const response = await objectService.getObjectById(item.object_id);
-        
-        let objectData;
-        if (response.data) {
-          objectData = Array.isArray(response.data) ? response.data[0] : response.data;
-        } else {
-          objectData = Array.isArray(response) ? response[0] : response;
-        }
-        
-        setObjectName(objectData?.name || 'Unknown Object');
+        const response = await objectService.getObject(item.object_id);
+        setObjectName(response?.name || 'Unknown Object');
       } catch (error) {
+        console.error('객체 정보 조회 실패:', error);
         setObjectName('Unknown Object');
       }
     };
     
     fetchObject();
-  }, [item.object_id, objectService]);
+  }, [item.object_id]);
 
   const cardStyle = isGridLayout 
     ? [styles.card, styles.gridCard, isLastInRow && styles.lastInRow]
@@ -65,14 +58,14 @@ export default function DetectionSummaryCard({
         <Text
           style={[
             styles.riskText,
-            item.danger_level === 'high'
+            item.risk_level === 'high'
               ? styles.riskHigh
-              : item.danger_level === 'medium'
+              : item.risk_level === 'medium'
               ? styles.riskMedium
               : styles.riskLow,
           ]}
         >
-          {item.danger_level}
+          {item.risk_level}
         </Text>
       </View>
 

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, FlatList } from 'react-native';
 import styles from '../styles/DetectionListScreen.styles';
 import DetectionSummaryCard from '../components/DetectionSummaryCard';
-import { DetectionService, type DetectionItem } from '../services/api/detectionApi';
+import { detectionService, type DetectionItem } from '../services/api';
 
 interface DetectionListScreenProps {
   navigation: any; // TODO: 정확한 navigation 타입 지정 필요
@@ -15,14 +15,10 @@ const DetectionListScreen = ({ navigation }: DetectionListScreenProps) => {
   const loadAllDetections = async (): Promise<void> => {
     try {
       setIsLoading(true);
-      const detectionService = DetectionService.getInstance();
       const response = await detectionService.getDetections();
       
-      if (response.success && Array.isArray(response.data)) {
-        setDetectionList(response.data);
-      } else {
-        console.warn('예상과 다른 응답 형식:', response);
-      }
+      // API 서비스는 배열을 직접 반환하므로 그대로 사용
+      setDetectionList(Array.isArray(response) ? response : []);
     } catch (error) {
       console.error('탐지 결과 로드 실패:', error);
       setDetectionList([]);

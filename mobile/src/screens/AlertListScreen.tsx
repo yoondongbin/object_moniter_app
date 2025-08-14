@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, ActivityIndicator } from 'react-native';
 import styles from '../styles/AlertListScreen.styles';
-import { NotificationService, type NotificationData } from '../services/api/notificationApi';
+import { notificationService, type NotificationData } from '../services/api';
 import AlertSummaryCard from '../components/AlertSummaryCard';
 
 interface AlertListScreenProps {
@@ -15,13 +15,12 @@ export default function AlertListScreen({ navigation }: AlertListScreenProps) {
   const loadAllNotifications = async (): Promise<void> => {
     try {
       setIsLoading(true);
-      const notificationService = NotificationService.getInstance();
       const result = await notificationService.getNotifications();
       
       console.log('AlertListScreen - 알림 데이터:', result); // 디버깅용
       
-      // MainScreen과 동일한 방식으로 처리
-      setNotificationList((result as any) ?? []);
+      // API 서비스는 배열을 직접 반환하므로 그대로 사용
+      setNotificationList(Array.isArray(result) ? result : []);
     } catch (error) {
       console.error('알림 로드 실패:', error);
       setNotificationList([]);

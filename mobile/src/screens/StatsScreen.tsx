@@ -4,8 +4,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import styles from '../styles/StatsScreen.styles';
 import DateRangeSelector from '../components/DateRangeSelector';
 import Chart from '../components/Chart';
-import { DetectionService, type DetectionItem } from '../services/api/detectionApi';
-import { ObjectService, type ObjectData } from '../services/api/objectApi';
+import { detectionService, objectService, type DetectionItem, type ObjectData } from '../services/api';
 import { getStatsByRange } from '../utils/statsUtils';
 import { CHART_COLORS, getResponsiveChartSize } from '../constants/chartConstants';
 import dayjs from 'dayjs';
@@ -35,14 +34,13 @@ export default function StatsScreen() {
   const loadObjects = useCallback(async () => {
     try {
       setObjectsLoading(true);
-      const objectService = ObjectService.getInstance();
       const response = await objectService.getObjects();
       
-      if (response.success && Array.isArray(response.data)) {
-        setObjects(response.data);
-        if (response.data.length > 0 && !selectedObject) {
-          setSelectedObject(response.data[0]);
-        }
+      // API 서비스는 배열을 직접 반환
+      const objectsData = Array.isArray(response) ? response : [];
+      setObjects(objectsData);
+      if (objectsData.length > 0 && !selectedObject) {
+        setSelectedObject(objectsData[0]);
       }
     } catch (error) {
       console.error('객체 목록 로드 실패:', error);
@@ -56,28 +54,15 @@ export default function StatsScreen() {
   const loadDetections = useCallback(async () => {
     try {
       setLoading(true);
-      const detectionService = DetectionService.getInstance();
       
       if (selectedObject) {
         // 특정 객체의 탐지 데이터 가져오기
-        const response = await detectionService.getDetectionsByObject(selectedObject.id!);
-        if (response.success && Array.isArray(response.data)) {
-          setDetections(response.data);
-        } else if (Array.isArray(response)) {
-          setDetections(response);
-        } else {
-          setDetections([]);
-        }
+        const response = await detectionService.getObjectDetections(selectedObject.id!);
+        setDetections(Array.isArray(response) ? response : []);
       } else {
         // 전체 탐지 데이터 가져오기
         const response = await detectionService.getDetections();
-        if (response.success && Array.isArray(response.data)) {
-          setDetections(response.data);
-        } else if (Array.isArray(response)) {
-          setDetections(response);
-        } else {
-          setDetections([]);
-        }
+        setDetections(Array.isArray(response) ? response : []);
       }
     } catch (error) {
       console.error('탐지 데이터 로드 실패:', error);

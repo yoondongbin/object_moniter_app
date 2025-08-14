@@ -10,7 +10,7 @@ import {
   Platform,
   ScrollView,
 } from 'react-native';
-import { ObjectService, type ObjectData } from '../services/api/objectApi';
+import { objectService, type CreateObjectRequest } from '../services/api';
 import styles from '../styles/CreateObjectScreen.styles';
 
 const CreateObjectScreen = ({ navigation }: any) => {
@@ -27,35 +27,27 @@ const CreateObjectScreen = ({ navigation }: any) => {
     setIsLoading(true);
 
     try {
-      const objectService = ObjectService.getInstance();
-      const objectData: Partial<ObjectData> = {
+      const objectData: CreateObjectRequest = {
         name: name.trim(),
-        description: description.trim() || undefined,
-        status: 'inactive', // 기본값은 비활성
+        description: description.trim() || '',
       };
 
       const response = await objectService.createObject(objectData);
       
-      if (response.success) {
-        Alert.alert('성공', '객체가 생성되었습니다!', [
-          {
-            text: '확인',
-            onPress: () => {
-              // 객체 관리 페이지로 명시적으로 돌아가기
-              navigation.navigate('ObjectList');
-            },
+      Alert.alert('성공', '객체가 생성되었습니다!', [
+        {
+          text: '확인',
+          onPress: () => {
+            // 객체 관리 페이지로 명시적으로 돌아가기
+            navigation.navigate('ObjectList');
           },
-        ]);
-      } else {
-        Alert.alert('실패', '객체 생성에 실패했습니다. 다시 시도해주세요.');
-      }
+        },
+      ]);
     } catch (error: any) {
       console.error('객체 생성 오류:', error);
       let errorMessage = '객체 생성에 실패했습니다. 다시 시도해주세요.';
       
-      if (error.response?.data?.error) {
-        errorMessage = error.response.data.error;
-      } else if (error.message) {
+      if (error.message) {
         errorMessage = error.message;
       }
       

@@ -1,93 +1,91 @@
-import { Platform } from 'react-native';
-// API 설정
-export const API_CONFIG = {
-  // 개발 환경
-  DEVELOPMENT: {
-    BASE_URL: 'http://localhost:5010',
-    TIMEOUT: 10000,
-  },
-  // 프로덕션 환경
-  PRODUCTION: {
-    BASE_URL: 'https://your-production-api.com',
-    TIMEOUT: 10000,
-  },
-};
+import { Platform } from "react-native";
+import Config from "react-native-config";
 
-// 환경 변수 사용 예시 (react-native-dotenv 사용 시)
-// import { API_BASE_URL_DEV, API_BASE_URL_PROD } from '@env';
-// 
-// const envConfig = {
-//   DEV_URL: API_BASE_URL_DEV || 'http://localhost:5010',
-//   PROD_URL: API_BASE_URL_PROD || 'https://your-production-api.com',
-//   TIMEOUT: 10000,
-// };
+// 환경별 API 설정
+export const API_CONFIG = {
+  DEVELOPMENT: {
+    BASE_URL: Config.API_BASE_URL || 'http://192.168.1.169:5010',
+    TIMEOUT: Number(Config.TIMEOUT) || 10000,
+  },
+  STAGING: {
+    BASE_URL: Config.API_BASE_URL || 'https://staging-api.your-domain.com',
+    TIMEOUT: Number(Config.TIMEOUT) || 15000,
+  },
+  PRODUCTION: {
+    BASE_URL: Config.API_BASE_URL || 'https://api.your-domain.com',
+    TIMEOUT: Number(Config.TIMEOUT) || 15000,
+  },
+}
+
+// 개선된 환경 감지 함수
+function getCurrentEnvironment(): 'DEVELOPMENT' | 'STAGING' | 'PRODUCTION' {
+  // react-native-config로 환경 구분
+  if (Config.APP_ENV === 'staging') return 'STAGING';
+  if (Config.APP_ENV === 'production') return 'PRODUCTION';
+  return 'DEVELOPMENT'; // 기본값
+}
 
 export const getApiConfig = () => {
-  if (__DEV__) {
-    // Android 에뮬레이터인지 확인
-    const isAndroid = Platform.OS === 'android';
-    const baseUrl = isAndroid ? 'http://10.0.2.2:5010' : 'http://localhost:5010';
-    
-    return {
-      ...API_CONFIG.DEVELOPMENT,
-      BASE_URL: baseUrl,
-    };
-  }
-  
-  return API_CONFIG.DEVELOPMENT;
+  const currentEnv = getCurrentEnvironment();
+  console.log(`🌍 현재 환경: ${currentEnv}`);
+  console.log(`🔗 API 기본 URL: ${API_CONFIG[currentEnv].BASE_URL}`);
+  return API_CONFIG[currentEnv];
 };
 
+// 엔드포인트만 포함
 export const API_ENDPOINTS = {
   // 인증 관련
   AUTH: {
-    LOGIN: { path: '/api/auth/login/', requiresAuth: false }, // POST
-    REGISTER: { path: '/api/auth/register/', requiresAuth: false }, // POST
-    REFRESH: { path: '/api/auth/refresh/', requiresAuth: true }, // POST
+    LOGIN: '/api/auth/login',
+    REGISTER: '/api/auth/register', 
+    REFRESH: '/api/auth/refresh',
   },
   
   // 객체 관련
   OBJECTS: {
-    LIST: { path: '/api/objects/', requiresAuth: true }, // GET
-    DETAIL: (objectId: number) => ({ path: `/api/objects/${objectId}/`, requiresAuth: true }), // GET
-    CREATE: { path: '/api/objects/', requiresAuth: true }, // POST
-    UPDATE: (objectId: number) => ({ path: `/api/objects/${objectId}/`, requiresAuth: true }), // PUT
-    DELETE: (objectId: number) => ({ path: `/api/objects/${objectId}/`, requiresAuth: true }), // DELETE
-    SWITCH: (objectId: number) => ({ path: `/api/objects/${objectId}/status/`, requiresAuth: true }), // PATCH
+    LIST: '/api/objects',
+    DETAIL: (id: number) => `/api/objects/${id}`,
+    CREATE: '/api/objects',
+    UPDATE: (id: number) => `/api/objects/${id}`,
+    DELETE: (id: number) => `/api/objects/${id}`,
+    DETECT: (id: number) => `/api/objects/${id}/detect`,
   },
 
-  // 객체 탐지 관련
+  // 탐지 결과 관련
   DETECTIONS: {
-    LIST: () => ({ path: `/api/objects/detections/`, requiresAuth: true }), // GET
-    DETAIL: (objectId: number, detectionId: number) => ({ path: `/api/objects/${objectId}/detections/${detectionId}/`, requiresAuth: true }), // GET
-    DETECT: (objectId: number,) => ({ path: `/api/objects/${objectId}/detect/`, requiresAuth: true}), // POST
-    UPDATE: (objectId: number, detectionId: number) => ({ path: `/api/objects/${objectId}/detections/${detectionId}/`, requiresAuth: true }), // PUT
-    DELETE: (objectId: number, detectionId: number) => ({ path: `/api/objects/${objectId}/detections/${detectionId}/`, requiresAuth: true }), // DELETE
-    STATS: (objectId: number) => ({ path: `/api/objects/${objectId}/detections/stats/`, requiresAuth: true }), // GET
-    LOGS: (objectId: number) => ({ path: `/api/logs/${objectId}/`, requiresAuth: true }), // GET
+    LIST_ALL: '/api/objects/detections', // 모든 탐지 결과
+    LIST_BY_OBJECT: (objectId: number) => `/api/objects/${objectId}/detections`,
+    DETAIL: (objectId: number, detectionId: number) => `/api/objects/${objectId}/detections/${detectionId}`,
   },
   
   // 알림 관련
   NOTIFICATIONS: {
-    LIST: { path: '/api/notifications/', requiresAuth: true }, // GET
-    DETAIL: (notificationId: number) => ({ path: `/api/notifications/${notificationId}/`, requiresAuth: true }), // GET
-    BY_DETECTION: (detectionId: number) => ({ path: `/api/notifications/by-detection/${detectionId}/`, requiresAuth: true }),
-    CHECK: (notificationId: number) => ({ path: `/api/notifications/${notificationId}/read/`, requiresAuth: true }), // PUT
-    DELETE: (notificationId: number) => ({ path: `/api/notifications/${notificationId}/`, requiresAuth: true }), // DELETE
-    SEND_INTERNAL: { path: '/api/notifications/send-internal/', requiresAuth: false }, // POST
+    LIST: '/api/notifications',
+    DETAIL: (id: number) => `/api/notifications/${id}`,
+    MARK_READ: (id: number) => `/api/notifications/${id}/read`,
+    DELETE: (id: number) => `/api/notifications/${id}`,
   },
   
-};
+  // 로그 관련  
+  LOGS: {
+    LIST: (objectId: number) => `/api/logs/${objectId}`,
+  },
+
+  // 시스템
+  HEALTH: '/api/health',
+} as const;
 
 // 인증이 필요한 엔드포인트 패턴
 export const AUTH_REQUIRED_PATTERNS = [
-  '/api/notifications', 
-  '/api/auth/refresh',
   '/api/objects',
+  '/api/notifications', 
   '/api/logs',
+  '/api/auth/refresh',
 ];
 
 // 인증이 필요 없는 엔드포인트 패턴
 export const AUTH_FREE_PATTERNS = [
   '/api/auth/login',
   '/api/auth/register',
-]; 
+  '/api/health',
+];

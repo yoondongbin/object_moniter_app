@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import styles from '../styles/AlertSummaryCard.styles';
-import { NotificationData } from '../services/api/notificationApi';
+import { NotificationData } from '../services/api';
 import { formatDateTime } from '../utils/dateUtils';
 
 type Props = {
@@ -13,13 +13,14 @@ export default function AlertSummaryCard({ item, onPress }: Props) {
     return (
       <TouchableOpacity style={styles.card} onPress={onPress}>
         <View style={styles.row}>
-          <Text style={styles.type}>{item.title}</Text>
+          <Text style={styles.type}>{(item as any).title || item.message}</Text>
           <Text 
             style={[
               styles.severity,
-              item.notification_type === 'high' ? styles.high : item.notification_type === 'medium' ? styles.medium : styles.low,
+              (item as any).notification_type === 'high' ? styles.high : 
+              (item as any).notification_type === 'medium' ? styles.medium : styles.low,
             ]}
-          >{item.notification_type}</Text>
+          >{(item as any).notification_type || 'low'}</Text>
         </View>
         <Text style={styles.time}>{formatDateTime(item.created_at)}</Text>
       </TouchableOpacity>

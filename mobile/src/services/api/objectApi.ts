@@ -1,154 +1,107 @@
-import apiClient from './apiClient';
-import { API_ENDPOINTS } from '../../config/apiConfig';
+import axiosInstance from "../../utils/axiosInstance";
+import { API_ENDPOINTS } from "../../config/apiConfig";
+import type {
+  ObjectItem,
+  CreateObjectRequest,
+  UpdateObjectRequest,
+  ApiResponse
+} from '../../types/api';
 
-export type ObjectData = {
-  id?: number;
-  name: string;
-  description?: string;
-  status: 'active' | 'inactive';
-  created_at?: string;
-  updated_at?: string;
-  user_id?: number;
-  detection_count?: number;
-  last_detection?: string;
-};
-
-export type ObjectResponse = {
-  success: boolean;
-  data: ObjectData | ObjectData[];
-  message?: string;
-};
-
-export class ObjectService {
+class ObjectService {
   private static instance: ObjectService;
 
-  private constructor() {}
-
-  // 싱글톤 패턴
-  public static getInstance(): ObjectService {
+  static getInstance(): ObjectService {
     if (!ObjectService.instance) {
       ObjectService.instance = new ObjectService();
     }
     return ObjectService.instance;
   }
 
-  // 객체 목록 조회
-  async getObjects(): Promise<ObjectResponse> {
+  // 객체 목록 조회 - wrapped 응답
+  async getObjects(): Promise<ObjectItem[]> {
     try {
-      const response = await apiClient.get<ObjectResponse>(API_ENDPOINTS.OBJECTS.LIST.path);
-      return response;
-    } catch (error) {
-      console.error('❌ 객체 목록 조회 실패:', error);
-      throw error;
+      const response = await axiosInstance.get<ApiResponse<ObjectItem[]>>(
+        API_ENDPOINTS.OBJECTS.LIST
+      );
+      return response.data.data || [];
+    } catch (error: any) {
+      console.error('객체 목록 조회 실패:', error);
+      throw new Error('객체 목록을 불러올 수 없습니다.');
     }
   }
 
-  // 특정 객체 조회
-  async getObjectById(objectId: number): Promise<ObjectResponse> {
+  // 객체 상세 조회 - 직접 객체 반환
+  async getObject(id: number): Promise<ObjectItem> {
     try {
-      const response = await apiClient.get<ObjectResponse>(
-        API_ENDPOINTS.OBJECTS.DETAIL(objectId).path
+      const response = await axiosInstance.get<ObjectItem>(
+        API_ENDPOINTS.OBJECTS.DETAIL(id)
       );
-      return response;
-    } catch (error) {
-      console.error(`❌ 객체 ${objectId} 조회 실패:`, error);
-      throw error;
+      if (!response.data) {
+        throw new Error('객체를 찾을 수 없습니다.');
+      }
+      return response.data;
+    } catch (error: any) {
+      console.error('객체 조회 실패:', error);
+      throw new Error('객체 정보를 불러올 수 없습니다.');
     }
   }
 
-  // 객체 생성
-  async createObject(objectData: Partial<ObjectData>): Promise<ObjectResponse> {
+  // 객체 생성 - 직접 객체 반환
+  async createObject(data: CreateObjectRequest): Promise<ObjectItem> {
     try {
-      const response = await apiClient.post<ObjectResponse>(
-        API_ENDPOINTS.OBJECTS.CREATE.path,
-        objectData
+      const response = await axiosInstance.post<ObjectItem>(
+        API_ENDPOINTS.OBJECTS.CREATE,
+        data
       );
-      return response;
-    } catch (error) {
-      console.error('❌ 객체 생성 실패:', error);
-      throw error;
+      console.log('객체 생성 성공:', response.data?.name);
+      return response.data;
+    } catch (error: any) {
+      console.error('객체 생성 실패:', error);
+      throw new Error(error.response?.data?.error || '객체 생성에 실패했습니다.');
     }
   }
 
-  // 객체 업데이트
-  async updateObject(objectId: number, objectData: Partial<ObjectData>): Promise<ObjectResponse> {
+  // 객체 수정 - 직접 객체 반환
+  async updateObject(id: number, data: UpdateObjectRequest): Promise<ObjectItem> {
     try {
-      const response = await apiClient.put<ObjectResponse>(
-        API_ENDPOINTS.OBJECTS.UPDATE(objectId).path,
-        objectData
+      const response = await axiosInstance.put<ObjectItem>(
+        API_ENDPOINTS.OBJECTS.UPDATE(id),
+        data
       );
-      return response;
-    } catch (error) {
-      console.error(`❌ 객체 ${objectId} 업데이트 실패:`, error);
-      throw error;
+      console.log('객체 수정 성공:', response.data?.name);
+      return response.data;
+    } catch (error: any) {
+      console.error('객체 수정 실패:', error);
+      throw new Error(error.response?.data?.error || '객체 수정에 실패했습니다.');
     }
   }
 
-  // 객체 삭제
-  async deleteObject(objectId: number): Promise<ObjectResponse> {
+  // 객체 삭제 - 메시지 응답
+  async deleteObject(id: number): Promise<void> {
     try {
-      const response = await apiClient.delete<ObjectResponse>(
-        API_ENDPOINTS.OBJECTS.DELETE(objectId).path
-      );
-      return response;
-    } catch (error) {
-      console.error(`❌ 객체 ${objectId} 삭제 실패:`, error);
-      throw error;
+      await axiosInstance.delete(API_ENDPOINTS.OBJECTS.DELETE(id));
+      console.log('✅ 객체 삭제 성공');
+    } catch (error: any) {
+      console.error('❌ 객체 삭제 실패:', error);
+      throw new Error(error.response?.data?.error || '객체 삭제에 실패했습니다.');
     }
   }
 
-  // 객체 상태 전환 (모니터링 시작/중지)
-  async switchObject(objectId: number): Promise<ObjectResponse> {
+  // 객체 탐지 실행 - 백엔드 응답 구조에 따라 조정
+  async detectObject(id: number, frameData?: string): Promise<any> {
     try {
-      const response = await apiClient.patch<ObjectResponse>(
-        API_ENDPOINTS.OBJECTS.SWITCH(objectId).path
+      const response = await axiosInstance.post(
+        API_ENDPOINTS.OBJECTS.DETECT(id),
+        frameData ? { frame_data: frameData } : {}
       );
-      return response;
-    } catch (error) {
-      console.error(`❌ 객체 ${objectId} 상태 전환 실패:`, error);
-      throw error;
-    }
-  }
-
-  // 활성 객체만 조회
-  async getActiveObjects(): Promise<ObjectResponse> {
-    try {
-      const response = await apiClient.get<ObjectResponse>(
-        `${API_ENDPOINTS.OBJECTS.LIST.path}?status=active`
-      );
-      return response;
-    } catch (error) {
-      console.error('❌ 활성 객체 조회 실패:', error);
-      throw error;
-    }
-  }
-
-  // 모니터링 중인 객체만 조회
-  async getMonitoringObjects(): Promise<ObjectResponse> {
-    try {
-      const response = await apiClient.get<ObjectResponse>(
-        `${API_ENDPOINTS.OBJECTS.LIST.path}?status=monitoring`
-      );
-      return response;
-    } catch (error) {
-      console.error('❌ 모니터링 객체 조회 실패:', error);
-      throw error;
-    }
-  }
-
-  // 객체 검색
-  async searchObjects(query: string): Promise<ObjectResponse> {
-    try {
-      const response = await apiClient.get<ObjectResponse>(
-        `${API_ENDPOINTS.OBJECTS.LIST.path}?search=${encodeURIComponent(query)}`
-      );
-      return response;
-    } catch (error) {
-      console.error('❌ 객체 검색 실패:', error);
-      throw error;
+      console.log('탐지 실행 성공');
+      return response.data;
+    } catch (error: any) {
+      console.error('탐지 실행 실패:', error);
+      throw new Error(error.response?.data?.error || '탐지 실행에 실패했습니다.');
     }
   }
 }
 
-// 싱글톤 인스턴스 export
 export const objectService = ObjectService.getInstance();
+export { ObjectService };

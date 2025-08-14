@@ -1,257 +1,99 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, ActivityIndicator, ScrollView, TouchableOpacity } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
-import { DetectionService, type DetectionItem } from '../services/api/detectionApi';
-import { ObjectService, type ObjectData } from '../services/api/objectApi';
-import { PieChart } from 'react-native-chart-kit';
-import { Dimensions } from 'react-native';
-import styles from '../styles/StatsByLabelScreen.styles';
-import chartConfig from '../config/chartConfig';
-import DateRangeSelector from '../components/DateRangeSelector';
-import dayjs from 'dayjs';
-import 'dayjs/locale/ko';
-dayjs.locale('ko');
+import React, { useState } from 'react';
+import { View, Text, ScrollView, ActivityIndicator } from 'react-native';
+import { detectionService, notificationService, type DetectionItem, type NotificationData } from '../services/api';
+import styles from '../styles/DetailScreen.styles';
 
-const screenWidth = Dimensions.get('window').width;
+const DetailScreen = ({ route }: any) => {
+  const { id, objectId } = route.params;
+  const [detectionData, setDetectionData] = useState<DetectionItem | null>(null);
+  const [notifications, setNotifications] = useState<NotificationData[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-export default function StatsByLabelScreen() {
-  const [detections, setDetections] = useState<DetectionItem[]>([]);
-  const [objects, setObjects] = useState<ObjectData[]>([]);
-  const [selectedObject, setSelectedObject] = useState<ObjectData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [objectsLoading, setObjectsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  
-  // 전체 기간으로 설정 (디폴트)
-  const [startDate, setStartDate] = useState<Date>(() => {
-    return dayjs().subtract(7, 'day').toDate(); // 7일 전부터
-  });
-  const [endDate, setEndDate] = useState<Date>(() => {
-    return dayjs().toDate(); // 오늘까지
-  });
-
-  // 객체 목록 로드
-  const loadObjects = useCallback(async () => {
-    try {
-      setObjectsLoading(true);
-      const objectService = ObjectService.getInstance();
-      const response = await objectService.getObjects();
-      
-      if (response.success && Array.isArray(response.data)) {
-        setObjects(response.data);
-        if (response.data.length > 0 && !selectedObject) {
-          setSelectedObject(response.data[0]);
-        }
-      }
-    } catch (error) {
-      console.error('객체 목록 로드 실패:', error);
-    } finally {
-      setObjectsLoading(false);
-    }
-  }, [selectedObject]);
-
-  // 탐지 데이터 로드
-  const loadDetections = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const detectionService = DetectionService.getInstance();
-      
-      if (selectedObject) {
-        // 특정 객체의 탐지 데이터 가져오기
-        const response = await detectionService.getDetectionsByObject(selectedObject.id!);
-        const detectionData = response?.data || response || [];
+  React.useEffect(() => {
+    const loadDetailData = async () => {
+      try {
+        setIsLoading(true);
         
-        if (Array.isArray(detectionData)) {
-          setDetections(detectionData);
-        } else {
-          console.warn('탐지 데이터가 배열이 아닙니다:', detectionData);
-          setDetections([]);
-        }
-      } else {
-        // 전체 탐지 데이터 가져오기
-        const result = await detectionService.getDetections();
-        const detectionData = result?.data || result || [];
+        const [detectionResult, notificationResult] = await Promise.all([
+          detectionService.getDetection(objectId || 1, id),
+          notificationService.getNotifications()
+        ]);
         
-        if (Array.isArray(detectionData)) {
-          setDetections(detectionData);
-        } else {
-          console.warn('탐지 데이터가 배열이 아닙니다:', detectionData);
-          setDetections([]);
-        }
+        setDetectionData(detectionResult);
+        
+        const allNotifications = Array.isArray(notificationResult) ? notificationResult : [];
+        const relatedNotifications = allNotifications.filter((n: any) => n.detection_id === id);
+        
+        setNotifications(relatedNotifications);
+      } catch (error) {
+        console.error('상세 정보 로드 실패:', error);
+      } finally {
+        setIsLoading(false);
       }
-    } catch (err) {
-      console.error('탐지 데이터 로딩 실패:', err);
-      setError('데이터를 불러올 수 없습니다.');
-      setDetections([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [selectedObject]);
+    };
 
-  // 화면이 포커스될 때마다 데이터를 새로고침
-  useFocusEffect(
-    useCallback(() => {
-      loadObjects();
-    }, [loadObjects])
-  );
+    loadDetailData();
+  }, [id, objectId]);
 
-  // 선택된 객체가 변경될 때 탐지 데이터 다시 로드
-  useEffect(() => {
-    if (selectedObject) {
-      loadDetections();
-    }
-  }, [selectedObject, loadDetections]);
-
-  // 선택된 객체가 변경될 때 탐지 데이터 필터링
-  const filteredDetections = selectedObject 
-    ? detections.filter(detection => detection.object_id === selectedObject.id)
-    : detections;
-
-  // 날짜 범위에 따른 데이터 필터링
-  const filteredByDate = filteredDetections.filter(detection => {
-    const detectionDate = dayjs(detection.created_at);
-    return detectionDate.isAfter(dayjs(startDate).subtract(1, 'day')) && 
-           detectionDate.isBefore(dayjs(endDate).add(1, 'day'));
-  });
-
-  // 탐지 유형 매핑 (영어 → 한글)
-  const detectionTypeMapping: Record<string, string> = {
-    'person': '사람',
-    'dangerous_object': '위험 객체',
-    'suspicious_object': '의심 객체',
-    'unknown': '미분류'
-  };
-
-  const labelCounts = filteredByDate.reduce((acc, cur) => {
-    // detection_type이 존재하는지 확인
-    const detectionType = cur.detection_type || 'unknown';
-    const mappedType = detectionTypeMapping[detectionType] || detectionType;
-    acc[mappedType] = (acc[mappedType] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
-
-  const colors = ['#4ECDC4', '#FF6B6B', '#FFD166', '#6A4C93', '#1A535C', '#95E1D3', '#FFA07A'];
-
-  const chartData = Object.entries(labelCounts)
-    .filter(([_, count]) => count > 0) // 0개인 항목 제외
-    .map(([label, count], index) => ({
-      name: label,
-      population: count,
-      color: colors[index % colors.length],
-      legendFontColor: '#333',
-      legendFontSize: 14,
-    }));
-
-  // 객체 선택 핸들러
-  const handleObjectSelect = (object: ObjectData) => {
-    setSelectedObject(object);
-  };
-
-  // 로딩 상태 처리
-  if (loading) {
+  if (isLoading) {
     return (
-      <View style={[styles.container, styles.centerContent]}>
-        <ActivityIndicator size="large" color="#007AFF" />
-        <Text style={styles.loadingText}>데이터를 불러오는 중...</Text>
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" />
+        <Text>상세 정보를 불러오는 중...</Text>
       </View>
     );
   }
 
-  // 에러 상태 처리
-  if (error) {
+  if (!detectionData) {
     return (
-      <View style={[styles.container, styles.centerContent]}>
-        <Text style={styles.errorText}>{error}</Text>
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <Text style={styles.errorText}>탐지 정보를 찾을 수 없습니다.</Text>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <ScrollView 
-        style={styles.scrollContainer}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={true}
-        bounces={true}
-      >
-        {/* 객체 선택 영역 */}
-        <View style={styles.objectSelectorContainer}>
-          <Text style={styles.sectionTitle}>객체 선택</Text>
-          {objectsLoading ? (
-            <ActivityIndicator size="small" color="#8B5CF6" />
-          ) : objects.length > 0 ? (
-            <ScrollView 
-              horizontal 
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.objectListContainer}
-            >
-              {objects.map((object) => (
-                <TouchableOpacity
-                  key={object.id}
-                  style={[
-                    styles.objectItem,
-                    selectedObject?.id === object.id && styles.selectedObjectItem
-                  ]}
-                  onPress={() => handleObjectSelect(object)}
-                >
-                  <Text style={[
-                    styles.objectItemText,
-                    selectedObject?.id === object.id && styles.selectedObjectItemText
-                  ]}>
-                    {object.name}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          ) : (
-            <Text style={styles.noObjectsText}>등록된 객체가 없습니다</Text>
-          )}
-        </View>
-
-        {/* 날짜 선택 영역 */}
-        <View style={styles.dateRangeContainer}>
-          <DateRangeSelector
-            startDate={startDate}
-            endDate={endDate}
-            onStartDateChange={setStartDate}
-            onEndDateChange={setEndDate}
-          />
-        </View>
-
-        {/* 차트 영역 */}
-        <View style={styles.chartContainer}>
-          <Text style={styles.title}>
-            {selectedObject ? `${selectedObject.name} 탐지 유형별 비율` : '전체 탐지 유형별 비율'}
-          </Text>
-          <Text style={styles.subtitle}>
-            {dayjs(startDate).format('YYYY.MM.DD')} ~ {dayjs(endDate).format('YYYY.MM.DD')}
-          </Text>
+    <ScrollView style={styles.container}>
+      <View style={styles.container}>
+        <Text style={styles.sectionTitle}>탐지 상세 정보</Text>
+        
+        <View style={styles.card}>
+          <Text style={styles.sectionTitle}>탐지 결과</Text>
+          <Text style={styles.label}>ID: {detectionData.id}</Text>
+          <Text style={styles.value}>시간: {new Date(detectionData.created_at).toLocaleString()}</Text>
+          <Text style={styles.value}>위험도: {detectionData.danger_level}</Text>
+          <Text style={styles.value}>신뢰도: {(detectionData.confidence * 100).toFixed(1)}%</Text>
+          <Text style={styles.value}>탐지 유형: {detectionData.detection_type}</Text>
+          <Text style={styles.value}>객체 클래스: {detectionData.object_class}</Text>
           
-          {chartData.length === 0 ? (
-            <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>표시할 탐지 데이터가 없습니다.</Text>
+          {/* Bounding Box 정보 표시 */}
+          {(detectionData.bbox_x !== undefined && detectionData.bbox_y !== undefined) && (
+            <View style={{ marginTop: 8 }}>
+              <Text style={styles.label}>위치 정보:</Text>
+              <Text style={styles.value}>X: {detectionData.bbox_x}, Y: {detectionData.bbox_y}</Text>
+              {detectionData.bbox_width && detectionData.bbox_height && (
+                <Text style={styles.value}>크기: {detectionData.bbox_width} × {detectionData.bbox_height}</Text>
+              )}
             </View>
-          ) : (
-            <>
-              <PieChart
-                data={chartData}
-                width={screenWidth - 32}
-                height={220}
-                chartConfig={chartConfig}
-                accessor="population"
-                backgroundColor="transparent"
-                paddingLeft="16"
-                absolute
-              />
-              <View style={styles.statsContainer}>
-                <Text style={styles.statsText}>총 탐지 건수: {filteredByDate.length}건</Text>
-                <Text style={styles.statsText}>유형 수: {chartData.length}개</Text>
-              </View>
-            </>
           )}
         </View>
-      </ScrollView>
-    </View>
+
+        {notifications.length > 0 && (
+          <View style={styles.card}>
+            <Text style={styles.sectionTitle}>관련 알림</Text>
+            {notifications.map((notification, index) => (
+              <View key={index} style={{ marginBottom: 12 }}>
+                <Text style={styles.value}>{notification.message}</Text>
+                <Text style={styles.label}>
+                  {new Date(notification.created_at).toLocaleString()}
+                </Text>
+              </View>
+            ))}
+          </View>
+        )}
+      </View>
+    </ScrollView>
   );
-}
+};
+
+export default DetailScreen;

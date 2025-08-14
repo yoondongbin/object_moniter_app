@@ -1,30 +1,11 @@
-import apiClient from './apiClient';
-import { API_ENDPOINTS } from '../../config/apiConfig';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import axiosInstance from "../../utils/axiosInstance";
+import { API_ENDPOINTS } from "../../config/apiConfig";
+import type { Notification, ApiResponse } from '../../types/api';
 
-export type NotificationData = {
-  id?: number;
-  title: string;
-  message: string;
-  notification_type: string;
-  is_read?: boolean;
-  created_at?: string;
-  user_id?: number;
-};
-
-export type NotificationResponse = {
-  success: boolean;
-  data: NotificationData | NotificationData[];
-  message?: string;
-};
-
-export class NotificationService {
+class NotificationService {
   private static instance: NotificationService;
 
-  private constructor() {}
-
-  // 싱글톤 패턴
-  public static getInstance(): NotificationService {
+  static getInstance(): NotificationService {
     if (!NotificationService.instance) {
       NotificationService.instance = new NotificationService();
     }
@@ -32,100 +13,58 @@ export class NotificationService {
   }
 
   // 알림 목록 조회
-  async getNotifications(): Promise<NotificationResponse> {
+  async getNotifications(): Promise<Notification[]> {
     try {
-      const token = await AsyncStorage.getItem('accessToken');
-      console.log('알림 API 호출 전 토큰 확인:', token ? token.substring(0, 20) + '...' : '없음');
-      
-      if (!token) {
-        throw new Error('토큰이 없습니다');
-      }
-      const response = await apiClient.get<NotificationResponse>(API_ENDPOINTS.NOTIFICATIONS.LIST.path);
-      return response;
-    } catch (error) {
+      const response = await axiosInstance.get<Notification[]>(
+        API_ENDPOINTS.NOTIFICATIONS.LIST
+      );
+      // 백엔드가 직접 배열을 반환하므로 response.data로 접근
+      return Array.isArray(response.data) ? response.data : [];
+    } catch (error: any) {
       console.error('❌ 알림 목록 조회 실패:', error);
-      throw error;
+      throw new Error('알림을 불러올 수 없습니다.')
     }
   }
 
-  // 특정 알림 조회
-  async getNotificationById(notificationId: number): Promise<NotificationResponse> {
+  // 알림 상세 조회
+  async getNotification(id: number): Promise<Notification> {
     try {
-      const response = await apiClient.get<NotificationResponse>(
-        API_ENDPOINTS.NOTIFICATIONS.DETAIL(notificationId).path
+      const response = await axiosInstance.get<Notification>(
+        API_ENDPOINTS.NOTIFICATIONS.DETAIL(id)
       );
-      return response;
-    } catch (error) {
-      console.error(`❌ 알림 ${notificationId} 조회 실패:`, error);
-      throw error;
-    }
-  }
-
-  async getNotificationByDetectionId(detectionId: number): Promise<NotificationResponse> {
-    try {
-      const response = await apiClient.get<NotificationResponse>(
-        `${API_ENDPOINTS.NOTIFICATIONS.BY_DETECTION(detectionId).path}`
-      );
-      return response;
-    } catch (error) {
-      console.error(`❌ detection_id ${detectionId}로 알림 조회 실패:`, error);
-      throw error;
+      // 백엔드가 직접 객체를 반환하므로 response.data로 접근
+      if (!response.data) {
+        throw new Error('알림을 찾을 수 없습니다.');
+      }
+      return response.data;
+    } catch (error: any) {
+      console.error('❌ 알림 조회 실패:', error);
+      throw new Error('알림 정보를 불러올 수 없습니다.');
     }
   }
 
   // 알림 읽음 처리
-  async checkNotification(notificationId: number): Promise<NotificationResponse> {
+  async markAsRead(id: number): Promise<void> {
     try {
-      const response = await apiClient.put<NotificationResponse>(
-        API_ENDPOINTS.NOTIFICATIONS.CHECK(notificationId).path
-      );
-      return response;
-    } catch (error) {
-      console.error(`❌ 알림 ${notificationId} 읽음 처리 실패:`, error);
-      throw error;
+      await axiosInstance.put(API_ENDPOINTS.NOTIFICATIONS.MARK_READ(id));
+      console.log('✅ 알림 읽음 처리 완료');
+    } catch (error: any) {
+      console.error('❌ 알림 읽음 처리 실패:', error);
+      throw new Error('알림 상태 변경에 실패했습니다.');
     }
   }
 
   // 알림 삭제
-  async deleteNotification(notificationId: number): Promise<NotificationResponse> {
+  async deleteNotification(id: number): Promise<void> {
     try {
-      const response = await apiClient.delete<NotificationResponse>(
-        API_ENDPOINTS.NOTIFICATIONS.DELETE(notificationId).path
-      );
-      return response;
-    } catch (error) {
-      console.error(`❌ 알림 ${notificationId} 삭제 실패:`, error);
-      throw error;
+      await axiosInstance.delete(API_ENDPOINTS.NOTIFICATIONS.DELETE(id));
+      console.log('✅ 알림 삭제 완료');
+    } catch (error: any) {
+      console.error('❌ 알림 삭제 실패:', error);
+      throw new Error('알림 삭제에 실패했습니다.');
     }
-  }
-
-  // 내부 알림 전송
-  async sendInternalNotification(notificationData: Partial<NotificationData>): Promise<NotificationResponse> {
-    try {
-      const response = await apiClient.post<NotificationResponse>(
-        API_ENDPOINTS.NOTIFICATIONS.SEND_INTERNAL.path,
-        notificationData
-      );
-      return response;
-    } catch (error) {
-      console.error('❌ 내부 알림 전송 실패:', error);
-      throw error;
-    }
-  }
-
-  // // 실시간 알림 구독 (Socket.IO)
-  // subscribeToNotifications(callback: (notification: NotificationData) => void): void {
-  //   // Socket.IO 구독 로직
-  //   // 이 부분은 실제 Socket.IO 구현에 따라 달라집니다
-  //   console.log('🔔 실시간 알림 구독 시작');
-  // }
-
-  // 실시간 알림 구독 해제
-  unsubscribeFromNotifications(): void {
-    // Socket.IO 구독 해제 로직
-    console.log('🔕 실시간 알림 구독 해제');
   }
 }
 
-// 싱글톤 인스턴스 export
 export const notificationService = NotificationService.getInstance();
+export { NotificationService };

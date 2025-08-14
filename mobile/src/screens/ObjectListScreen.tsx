@@ -8,7 +8,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { ObjectService, type ObjectData } from '../services/api/objectApi';
+import { objectService, type ObjectData } from '../services/api';
 import styles from '../styles/ObjectListScreen.styles';
 import { Colors } from '../styles/colors';
 
@@ -20,14 +20,10 @@ const ObjectListScreen = ({ navigation }: any) => {
   const loadObjects = useCallback(async () => {
     try {
       setIsLoading(true);
-      const objectService = ObjectService.getInstance();
       const response = await objectService.getObjects();
       
-      if (response.success && Array.isArray(response.data)) {
-        setObjects(response.data);
-      } else {
-        setObjects([]);
-      }
+      // API 서비스는 배열을 직접 반환하므로 그대로 사용
+      setObjects(Array.isArray(response) ? response : []);
     } catch (error) {
       console.error('객체 목록 로드 실패:', error);
       Alert.alert('오류', '객체 목록을 불러오는데 실패했습니다.');
@@ -69,7 +65,6 @@ const ObjectListScreen = ({ navigation }: any) => {
           style: 'destructive',
           onPress: async () => {
             try {
-              const objectService = ObjectService.getInstance();
               await objectService.deleteObject(object.id!);
               Alert.alert('성공', '객체가 삭제되었습니다.');
               loadObjects();
@@ -85,7 +80,6 @@ const ObjectListScreen = ({ navigation }: any) => {
 
   const handleToggleStatus = async (object: ObjectData) => {
     try {
-      const objectService = ObjectService.getInstance();
       const newStatus = object.status === 'active' ? 'inactive' : 'active';
       await objectService.updateObject(object.id!, { status: newStatus });
       Alert.alert('성공', `객체 상태가 ${newStatus === 'active' ? '활성화' : '비활성화'}되었습니다.`);
@@ -115,9 +109,9 @@ const ObjectListScreen = ({ navigation }: any) => {
         <Text style={styles.objectInfoText}>
           생성일: {item.created_at ? new Date(item.created_at).toLocaleDateString() : 'N/A'}
         </Text>
-        {item.detection_count !== undefined && (
+        {(item as any).detection_count !== undefined && (
           <Text style={styles.objectInfoText}>
-            탐지 횟수: {item.detection_count}회
+            탐지 횟수: {(item as any).detection_count}회
           </Text>
         )}
       </View>

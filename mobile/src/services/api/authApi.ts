@@ -1,191 +1,119 @@
-import apiClient from './apiClient';
-import { API_ENDPOINTS } from '../../config/apiConfig';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import axiosInstance from "../../utils/axiosInstance";
+import { API_ENDPOINTS } from "../../config/apiConfig";
+import type {
+  LoginRequest,
+  RegisterRequest,
+  AuthResponse,
+  RefreshRequest,
+  User
+} from '../../types/api';
 
-// 인증 관련 타입 정의
-export type LoginRequest = {
-  username: string;
-  password: string;
-};
+// 토큰 스토리지 - 정적 import로 변경
+import { 
+  setTokens, 
+  setAccessToken, 
+  getAccessToken,
+  getRefreshToken, 
+  clearTokens 
+} from '../auth/tokenStorage';
 
-export type RegisterRequest = {
-  username: string;
-  password: string;
-  email: string;
-};
-
-export type AuthResponse = {
-  access_token: string;
-  refresh_token: string;
-  user: {
-    id: number;
-    username: string;
-    email: string;
-    name: string;
-    created_at: string;
-    updated_at: string;
-  };
-  message?: string;
-};
-
-export class AuthService {
+class AuthService {
   private static instance: AuthService;
-  private token: string | null = null;
 
-  private constructor() {}
-
-  // 싱글톤 패턴
-  public static getInstance(): AuthService {
+  static getInstance(): AuthService {
     if (!AuthService.instance) {
       AuthService.instance = new AuthService();
     }
     return AuthService.instance;
   }
 
-  // 로그인 API
+  // 현재 액세스 토큰 조회 (AppNavigator에서 사용)
+  async getCurrentToken(): Promise<string | null> {
+    return await getAccessToken();
+  }
+
+  // 로그인
   async login(credentials: LoginRequest): Promise<AuthResponse> {
     try {
-      const response = await apiClient.post<AuthResponse>(
-        API_ENDPOINTS.AUTH.LOGIN.path,
-        credentials
+      // 백엔드가 직접 객체를 반환하므로 AuthResponse 타입 사용
+      const response = await axiosInstance.post<AuthResponse>(
+        API_ENDPOINTS.AUTH.LOGIN,
+        credentials,
+        { skipAuth: true } // 로그인은 인증 헤더 없이 전송
       );
 
-      console.log('로그인 응답:', response);
-
-      // 로그인 성공 시에만 토큰 저장
-      if (response.access_token) {
-        console.log('토큰 저장 중:', response.access_token.substring(0, 20) + '...');
-        await this.saveToken(response.access_token);
-      } else {
-        console.error('access_token이 없습니다:', response);
-      }
-      if (response.refresh_token) {
-        console.log('refresh_token 저장 중:', response.refresh_token.substring(0, 20) + '...');
-        await AsyncStorage.setItem('refreshToken', response.refresh_token);
-      }
-
-      return response;
-    } catch (error) {
+      const authData = response.data;
+      
+      // 토큰 저장
+      await setTokens(authData.access_token, authData.refresh_token);
+      
+      console.log('✅ 로그인 성공:', authData.user.username);
+      return authData;
+    } catch (error: any) {
       console.error('❌ 로그인 실패:', error);
-      throw error;
+      throw new Error(error.response?.data?.error || '로그인에 실패했습니다.');
     }
   }
 
-  // 회원가입 API
-  async register(userData: RegisterRequest): Promise<AuthResponse> {
+  // 회원가입
+  async register(userData: RegisterRequest): Promise<{ message: string; user: User }> {
     try {
-      const response = await apiClient.post<AuthResponse>(
-        API_ENDPOINTS.AUTH.REGISTER.path,
+      // 백엔드가 { message: string, user: User } 형태로 반환
+      const response = await axiosInstance.post<{ message: string; user: User }>(
+        API_ENDPOINTS.AUTH.REGISTER,
         userData
       );
-      
-      // 회원가입 성공 시에도 토큰 저장 (자동 로그인)
-      if (response.access_token) {
-        await this.saveToken(response.access_token);
-      }
-      
-      return response;
-    } catch (error) {
+
+      console.log('✅ 회원가입 성공:', response.data.user.username);
+      return response.data;
+    } catch (error: any) {
       console.error('❌ 회원가입 실패:', error);
-      throw error;
+      throw new Error(error.response?.data?.error || '회원가입에 실패했습니다.');
     }
   }
 
-  // 토큰 갱신 API
-  async refreshToken(): Promise<AuthResponse> {
+  // 토큰 갱신
+  async refreshToken(): Promise<string> {
     try {
-      const refreshToken = await AsyncStorage.getItem('refreshToken');
-    
+      const refreshToken = await getRefreshToken();
       if (!refreshToken) {
-        console.log('❌ Refresh token이 없습니다.');
-        throw new Error('Refresh token not found');
+        throw new Error('리프레시 토큰이 없습니다.');
       }
-      
-      console.log('🔄 토큰 갱신 시도 중...');
-      const response = await apiClient.post<AuthResponse>(
-        API_ENDPOINTS.AUTH.REFRESH.path,
-        {
-          refresh_token: refreshToken
-        }
+
+      // 백엔드가 { access_token: string, message: string } 형태로 반환
+      const response = await axiosInstance.post<{ access_token: string; message: string }>(
+        API_ENDPOINTS.AUTH.REFRESH,
+        { refresh_token: refreshToken }
       );
+
+      const newAccessToken = response.data.access_token;
       
-      if (response.access_token) {
-        await this.saveToken(response.access_token);
-        console.log('✅ 토큰 갱신 성공');
-      }
-      if (response.refresh_token) {
-        await AsyncStorage.setItem('refreshToken', response.refresh_token);
-        console.log('✅ Refresh token 업데이트');
-      }
+      // 새로운 액세스 토큰 저장
+      await setAccessToken(newAccessToken);
       
-      return response;
-    } catch (error) {
+      console.log('✅ 토큰 갱신 성공');
+      return newAccessToken;
+    } catch (error: any) {
       console.error('❌ 토큰 갱신 실패:', error);
-      // 토큰 갱신 실패 시 모든 토큰 제거
+      // 리프레시 토큰도 만료된 경우 자동 로그아웃
       await this.logout();
-      throw error;
+      throw new Error('토큰 갱신에 실패했습니다. 다시 로그인해주세요.');
     }
   }
 
   // 로그아웃
   async logout(): Promise<void> {
     try {
-      // 토큰들 제거
-      await this.removeToken();
-      await AsyncStorage.removeItem('refreshToken');
-      console.log('✅ 모든 토큰이 성공적으로 제거되었습니다.');
-    } catch (error) {
-      console.error('❌ 로그아웃 실패:', error);
-      throw error;
-    }
-  }
-
-  // 인증 상태 확인
-  async isAuthenticated(): Promise<boolean> {
-    try {
-      const token = await AsyncStorage.getItem('accessToken');
-      const hasToken = !!token;
-      this.token = token;
-      console.log('🔍 인증 상태 확인:', hasToken ? '인증됨' : '인증되지 않음');
-      return hasToken;
-    } catch (error) {
-      console.error('❌ 인증 상태 확인 실패:', error);
-      return false;
-    }
-  }
-
-  // 현재 토큰 가져오기
-  async getCurrentToken(): Promise<string | null> {
-    if (!this.token) {
-      this.token = await AsyncStorage.getItem('accessToken');
-    }
-    return this.token;
-  }
-
-  // 토큰 저장 헬퍼 함수
-  private async saveToken(token: string): Promise<void> {
-    try {
-      this.token = token;
-      await AsyncStorage.setItem('accessToken', token);
-      console.log('✅ 토큰이 성공적으로 저장되었습니다.');
-    } catch (error) {
-      console.error('❌ 토큰 저장 실패:', error);
-      throw error;
-    }
-  }
-
-  // 토큰 제거 헬퍼 함수
-  private async removeToken(): Promise<void> {
-    try {
-      await AsyncStorage.removeItem('accessToken');
-      this.token = null;
-      console.log('✅ 토큰이 성공적으로 제거되었습니다.');
-    } catch (error) {
-      console.error('❌ 토큰 제거 실패:', error);
-      throw error;
+      // 토큰 제거
+      await clearTokens();
+      console.log('✅ 로그아웃 성공');
+    } catch (error: any) {
+      console.error('❌ 로그아웃 중 오류:', error);
+      // 토큰 제거만 실패해도 로그아웃은 진행
+      await clearTokens();
     }
   }
 }
 
-// 싱글톤 인스턴스 export
 export const authService = AuthService.getInstance();
+export { AuthService };

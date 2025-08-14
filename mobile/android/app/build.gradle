@@ -1,6 +1,14 @@
 apply plugin: "com.android.application"
 apply plugin: "org.jetbrains.kotlin.android"
 apply plugin: "com.facebook.react"
+// react-native-config에서 .env 값을 안드로이드에 주입
+apply from: project(':react-native-config').projectDir.getPath() + "/dotenv.gradle"
+
+// 빌드 타입별 사용할 .env 파일 지정 (우리는 스크립트에서 .env를 갈아끼우므로 release는 .env 사용)
+project.ext.envConfigFiles = [
+    debug: ".env.development",
+    release: ".env"
+]
 
 /**
  * This is the configuration block to customize your React Native Android app.
@@ -92,6 +100,28 @@ android {
             keyAlias 'androiddebugkey'
             keyPassword 'android'
         }
+        release {
+            // 키스토어 파일과 비밀번호가 모두 있는 경우에만 사용
+            if (project.hasProperty('MYAPP_UPLOAD_STORE_FILE') && 
+                project.hasProperty('MYAPP_UPLOAD_STORE_PASSWORD') &&
+                file(MYAPP_UPLOAD_STORE_FILE).exists()) {
+                
+                storeFile file(MYAPP_UPLOAD_STORE_FILE)
+                storePassword MYAPP_UPLOAD_STORE_PASSWORD
+                keyAlias MYAPP_UPLOAD_KEY_ALIAS
+                keyPassword MYAPP_UPLOAD_KEY_PASSWORD
+                
+                println "✅ 프로덕션 키스토어 사용: ${MYAPP_UPLOAD_STORE_FILE}"
+            } else {
+                // 키스토어가 없으면 debug 키스토어 사용 (로컬 개발용)
+                storeFile file('debug.keystore')
+                storePassword 'android'
+                keyAlias 'androiddebugkey'
+                keyPassword 'android'
+                
+                println "⚠️ Debug 키스토어 사용 (로컬 개발)"
+            }
+        }
     }
     buildTypes {
         debug {
@@ -115,5 +145,37 @@ dependencies {
         implementation("com.facebook.react:hermes-android")
     } else {
         implementation jscFlavor
+    }
+}
+
+// New Architecture: codegen 출력물이 CMake 전에 생성되도록 태스크 의존성 추가
+afterEvaluate {
+    def codegenDeps = [
+        ":react-native-async-storage_async-storage:generateCodegenSchemaFromJavaScript",
+        ":react-native-async-storage_async-storage:generateCodegenArtifactsFromSchema",
+        ":react-native-gesture-handler:generateCodegenSchemaFromJavaScript",
+        ":react-native-gesture-handler:generateCodegenArtifactsFromSchema",
+        ":react-native-image-picker:generateCodegenSchemaFromJavaScript",
+        ":react-native-image-picker:generateCodegenArtifactsFromSchema",
+        ":react-native-pager-view:generateCodegenSchemaFromJavaScript",
+        ":react-native-pager-view:generateCodegenArtifactsFromSchema",
+        ":react-native-picker_picker:generateCodegenSchemaFromJavaScript",
+        ":react-native-picker_picker:generateCodegenArtifactsFromSchema",
+        ":react-native-safe-area-context:generateCodegenSchemaFromJavaScript",
+        ":react-native-safe-area-context:generateCodegenArtifactsFromSchema",
+        ":react-native-screens:generateCodegenSchemaFromJavaScript",
+        ":react-native-screens:generateCodegenArtifactsFromSchema",
+        ":react-native-svg:generateCodegenSchemaFromJavaScript",
+        ":react-native-svg:generateCodegenArtifactsFromSchema",
+        ":react-native-vector-icons:generateCodegenSchemaFromJavaScript",
+        ":react-native-vector-icons:generateCodegenArtifactsFromSchema",
+        ":react-native-reanimated:generateCodegenSchemaFromJavaScript",
+        ":react-native-reanimated:generateCodegenArtifactsFromSchema",
+        ":react-native-worklets:generateCodegenSchemaFromJavaScript",
+        ":react-native-worklets:generateCodegenArtifactsFromSchema"
+    ]
+
+    tasks.matching { it.name.startsWith("configureCMake") || it.name.startsWith("buildCMake") }.configureEach {
+        dependsOn(codegenDeps.findAll { tasks.findByPath(it) != null })
     }
 }

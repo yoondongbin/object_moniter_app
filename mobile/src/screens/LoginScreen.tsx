@@ -10,7 +10,8 @@ import {
   Platform,
   ScrollView,
 } from 'react-native';
-import { AuthService, type LoginRequest } from '../services/api/authApi';
+import { authService } from '../services/api/authApi';
+import type { LoginRequest } from '../types/api';
 import styles from '../styles/LoginScreen.styles';
 
 const LoginScreen = ({ navigation }: any) => {
@@ -27,7 +28,6 @@ const LoginScreen = ({ navigation }: any) => {
     setIsLoading(true);
 
     try {
-      const authService = AuthService.getInstance();
       const loginData: LoginRequest = {
         username: username.trim(),
         password: password,

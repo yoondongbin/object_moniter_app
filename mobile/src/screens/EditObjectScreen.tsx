@@ -10,24 +10,15 @@ import {
   Platform,
   ScrollView,
 } from 'react-native';
-import { useRoute } from '@react-navigation/native';
-import { ObjectService, type ObjectData } from '../services/api/objectApi';
+import { objectService, type ObjectData, type UpdateObjectRequest } from '../services/api';
 import styles from '../styles/EditObjectScreen.styles';
 
-const EditObjectScreen = ({ navigation }: any) => {
-  const route = useRoute();
-  const { object } = route.params as { object: ObjectData };
-  
-  const [name, setName] = useState(object.name || '');
-  const [description, setDescription] = useState(object.description || '');
+const EditObjectScreen = ({ route, navigation }: any) => {
+  const { object } = route.params;
+  const [name, setName] = useState(object?.name || '');
+  const [description, setDescription] = useState(object?.description || '');
+  const [status, setStatus] = useState(object?.status || 'inactive');
   const [isLoading, setIsLoading] = useState(false);
-
-  useEffect(() => {
-    if (object) {
-      setName(object.name || '');
-      setDescription(object.description || '');
-    }
-  }, [object]);
 
   const handleUpdateObject = async () => {
     if (!name.trim()) {
@@ -38,31 +29,27 @@ const EditObjectScreen = ({ navigation }: any) => {
     setIsLoading(true);
 
     try {
-      const objectService = ObjectService.getInstance();
-      const objectData: Partial<ObjectData> = {
+      const updateData: UpdateObjectRequest = {
         name: name.trim(),
-        description: description.trim() || undefined,
+        description: description.trim() || '',
+        status: status as 'active' | 'inactive',
       };
 
-      const response = await objectService.updateObject(object.id!, objectData);
+      const response = await objectService.updateObject(object.id, updateData);
       
-      if (response.success) {
-        Alert.alert('성공', '객체가 수정되었습니다!', [
-          {
-            text: '확인',
-            onPress: () => navigation.goBack(),
+      Alert.alert('성공', '객체가 수정되었습니다!', [
+        {
+          text: '확인',
+          onPress: () => {
+            navigation.goBack();
           },
-        ]);
-      } else {
-        Alert.alert('실패', '객체 수정에 실패했습니다. 다시 시도해주세요.');
-      }
+        },
+      ]);
     } catch (error: any) {
       console.error('객체 수정 오류:', error);
       let errorMessage = '객체 수정에 실패했습니다. 다시 시도해주세요.';
       
-      if (error.response?.data?.error) {
-        errorMessage = error.response.data.error;
-      } else if (error.message) {
+      if (error.message) {
         errorMessage = error.message;
       }
       
@@ -76,6 +63,10 @@ const EditObjectScreen = ({ navigation }: any) => {
     navigation.goBack();
   };
 
+  const toggleStatus = () => {
+    setStatus(status === 'active' ? 'inactive' : 'active');
+  };
+
   return (
     <KeyboardAvoidingView
       style={styles.container}
@@ -86,7 +77,7 @@ const EditObjectScreen = ({ navigation }: any) => {
           {/* 헤더 */}
           <View style={styles.header}>
             <Text style={styles.title}>객체 수정</Text>
-            <Text style={styles.subtitle}>객체 정보를 수정하세요</Text>
+            <Text style={styles.subtitle}>객체 정보를 편집하세요</Text>
           </View>
 
           {/* 폼 */}
@@ -120,14 +111,25 @@ const EditObjectScreen = ({ navigation }: any) => {
               />
             </View>
 
-            {/* 현재 상태 표시 */}
-            <View style={styles.statusContainer}>
-              <Text style={styles.statusLabel}>현재 상태</Text>
-              <View style={[styles.statusBadge, { backgroundColor: object.status === 'active' ? '#10B981' : '#9CA3AF' }]}>
-                <Text style={styles.statusText}>
-                  {object.status === 'active' ? '활성' : '비활성'}
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>상태</Text>
+              <TouchableOpacity
+                style={[
+                  styles.textInput, 
+                  { 
+                    backgroundColor: status === 'active' ? '#10B981' : '#6B7280',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    paddingVertical: 12
+                  }
+                ]}
+                onPress={toggleStatus}
+                disabled={isLoading}
+              >
+                <Text style={{ color: 'white', fontWeight: 'bold' }}>
+                  {status === 'active' ? '활성' : '비활성'}
                 </Text>
-              </View>
+              </TouchableOpacity>
             </View>
 
             {/* 버튼 */}

@@ -15,7 +15,7 @@ import RegisterScreen from '../screens/RegisterScreen';
 import ObjectListScreen from '../screens/ObjectListScreen';
 import CreateObjectScreen from '../screens/CreateObjectScreen';
 import EditObjectScreen from '../screens/EditObjectScreen';
-import { AuthService } from '../services/api/authApi';
+import { authService } from '../services/api/authApi';
 import { Colors } from '../styles/colors';
 
 const Stack = createNativeStackNavigator();
@@ -158,7 +158,6 @@ export default function AppNavigator() {
   useEffect(() => {
     const interval = setInterval(async () => {
       if (!isLoading) {
-        const authService = AuthService.getInstance();
         const token = await authService.getCurrentToken();
         const hasToken = !!token;
         
@@ -181,7 +180,6 @@ export default function AppNavigator() {
   const checkAuthStatus = async () => {
     try {
       setIsLoading(true);
-      const authService = AuthService.getInstance();
       
       // access 토큰 존재 여부 확인
       const token = await authService.getCurrentToken();

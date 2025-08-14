@@ -10,7 +10,8 @@ import {
   Platform,
   ScrollView,
 } from 'react-native';
-import { AuthService, type RegisterRequest } from '../services/api/authApi';
+import { authService } from '../services/api/authApi';
+import type { RegisterRequest } from '../types/api';
 import styles from '../styles/RegisterScreen.styles';
 
 const RegisterScreen = ({ navigation }: any) => {
@@ -39,7 +40,7 @@ const RegisterScreen = ({ navigation }: any) => {
     setIsLoading(true);
 
     try {
-      const authService = AuthService.getInstance();
+
       const registerData: RegisterRequest = {
         username: username.trim(),
         email: email.trim(),

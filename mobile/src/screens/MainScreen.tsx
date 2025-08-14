@@ -1,25 +1,36 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, Alert, ActivityIndicator, ScrollView, Platform } from 'react-native';
 import styles from '../styles/MainScreen.styles';
-import { DetectionService } from '../services/api/detectionApi';
+import { 
+  detectionService, 
+  notificationService, 
+  objectService, // 추가
+  authService 
+} from '../services/api';
 import DetectionSummaryCard from '../components/DetectionSummaryCard';
 import AlertSummaryCard from '../components/AlertSummaryCard';
-import { NotificationService } from '../services/api/notificationApi';
-import { AuthService } from '../services/api/authApi';
 import { sendDetectionNotification, sendDangerLevelNotification } from '../utils/alramUtils';
 
 const MainScreen = ({ navigation }: any) => {
   const [detections, setDetections] = useState<any[]>([]);
   const [notifications, setNotifications] = useState<any[]>([]);
+  const [objects, setObjects] = useState<any[]>([]);
   const [isDetecting, setIsDetecting] = useState(false);
+
+  // 객체 목록 로드
+  const loadObjects = async () => {
+    try {
+      const objectsResult = await objectService.getObjects();
+      setObjects(Array.isArray(objectsResult) ? objectsResult : []);
+    } catch (error) {
+      console.error('Failed to load objects:', error);
+    }
+  };
 
   const refreshNotifications = async () => {
     try {
-      const notificationService = NotificationService.getInstance();
       const notificationResult = await notificationService.getNotifications();
-      const notificationData = Array.isArray(notificationResult?.data) ? notificationResult.data : 
-                             Array.isArray(notificationResult) ? notificationResult : [];
-      setNotifications(notificationData);
+      setNotifications(Array.isArray(notificationResult) ? notificationResult : []);
     } catch (error) {
       console.error('Failed to refresh notifications:', error);
     }
@@ -27,10 +38,8 @@ const MainScreen = ({ navigation }: any) => {
 
   const refreshDetections = async () => {
     try {
-      const detectionService = DetectionService.getInstance();
       const detectionResult = await detectionService.getDetections();
-      const detectionData = detectionResult?.data || detectionResult || [];
-      setDetections(detectionData);
+      setDetections(Array.isArray(detectionResult) ? detectionResult : []);
     } catch (error) {
       console.error('Failed to refresh detections:', error);
     }
@@ -40,6 +49,7 @@ const MainScreen = ({ navigation }: any) => {
     const loadData = async () => {
       try {
         await Promise.all([
+          loadObjects(),
           refreshDetections(),
           refreshNotifications()
         ]);
@@ -57,50 +67,39 @@ const MainScreen = ({ navigation }: any) => {
       return;
     }
 
+    // 객체가 없으면 경고
+    if (objects.length === 0) {
+      Alert.alert('객체 없음', '탐지할 객체가 없습니다. 먼저 객체를 등록해주세요.', [
+        { text: '확인' },
+        { text: '객체 등록', onPress: () => navigation.navigate('CreateObject') }
+      ]);
+      return;
+    }
+
     setIsDetecting(true);
 
     try {
-      const detectionService = DetectionService.getInstance();
+      // 첫 번째 active 객체에 대해 탐지 실행
+      const activeObject = objects.find(obj => obj.status === 'active') || objects[0];
       
-      const detectionResult = await detectionService.createDetection();
+      console.log(`🔍 객체 탐지 시작: ${activeObject.name} (ID: ${activeObject.id})`);
       
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // 실제 탐지 API 호출
+      const detectionResult = await detectionService.executeDetection(activeObject.id);
       
+      console.log('✅ 탐지 성공:', detectionResult);
+      
+      // 탐지 완료 후 데이터 새로고침
       await Promise.all([
         refreshDetections(),
         refreshNotifications()
       ]);
       
-      // 로컬 알림 발송
-      if (detectionResult) {
-        console.log('🔍 전체 탐지 결과:', JSON.stringify(detectionResult, null, 2));
-        
-        // 백엔드에서 반환하는 실제 구조 처리
-        let detectionData = null;
-        let dangerLevel = 'safe';
-        let confidence = 0.0;
-        
-        detectionData = detectionResult.result;
-        dangerLevel = detectionData.danger_level || 'safe';
-        confidence = detectionData.detected_objects[0].confidence || 0.0;
-        
-        console.log('🔍 처리된 탐지 데이터:', JSON.stringify(detectionData, null, 2));
-        console.log('🔍 위험도:', dangerLevel);
-        console.log('🔍 신뢰도:', confidence);
-        
-        if (dangerLevel && dangerLevel !== 'safe') {
-          await sendDangerLevelNotification(dangerLevel, confidence);
-        } else {
-          await sendDetectionNotification(detectionData);
-        }
-      } else {
-        console.log('❌ 탐지 결과가 없습니다:', detectionResult);
-      }
+      Alert.alert('탐지 완료', `"${activeObject.name}" 객체 탐지가 완료되었습니다.`);
       
-      Alert.alert('탐지 완료', '객체 탐지가 완료되었습니다.');
-    } catch (error) {
-      console.error('Detection error:', error);
-      Alert.alert('오류', '객체 탐지 중 오류가 발생했습니다.');
+    } catch (error: any) {
+      console.error('❌ 탐지 실패:', error);
+      Alert.alert('탐지 실패', error.message || '객체 탐지 중 오류가 발생했습니다.');
     } finally {
       setIsDetecting(false);
     }
@@ -113,7 +112,6 @@ const MainScreen = ({ navigation }: any) => {
         text: '로그아웃',
         onPress: async () => {
           try {
-            const authService = AuthService.getInstance();
             await authService.logout();
             
             // 토큰이 제대로 제거되었는지 확인

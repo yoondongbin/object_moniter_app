@@ -1,0 +1,264 @@
+---
+globs: mobile/src/**/*.ts,mobile/src/**/*.tsx,mobile/*.ts,mobile/*.tsx
+description: React Native 코딩 표준 및 베스트 프랙티스
+---
+
+# React Native 코딩 표준
+
+## 📝 코딩 스타일 가이드
+
+### 변수명 및 함수명 규칙
+```typescript
+// ✅ 좋은 예시 - 명확하고 직관적인 변수명
+const userAuthenticationToken = 'abc123';
+const isUserLoggedIn = true;
+const fetchUserProfileData = async () => {};
+
+// ❌ 나쁜 예시 - 모호한 변수명
+const token = 'abc123';
+const flag = true;
+const getData = async () => {};
+```
+
+### 컴포넌트 구조
+```typescript
+// 컴포넌트는 다음 순서로 구성:
+// 1. imports
+// 2. interfaces/types
+// 3. 컴포넌트 함수
+// 4. styles
+// 5. export
+
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet } from 'react-native';
+
+interface LoginScreenProps {
+  navigation: any;
+  onLoginSuccess: (user: User) => void;
+}
+
+const LoginScreen: React.FC<LoginScreenProps> = ({ navigation, onLoginSuccess }) => {
+  // 상태 관리
+  const [username, setUsername] = useState<string>('');
+  const [password, setPassword] = useState<string>('');
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+
+  // 이벤트 핸들러
+  const handleLoginButtonPress = async () => {
+    // 로그인 로직
+  };
+
+  return (
+    <View style={styles.container}>
+      {/* UI 컴포넌트 */}
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    padding: 16,
+  },
+});
+
+export default LoginScreen;
+```
+
+## 🔧 API 통신 패턴
+
+### API 서비스 구조
+모든 API 호출은 [mobile/src/services/api/](mdc:mobile/src/services/api/) 디렉토리의 서비스 파일을 통해 수행:
+
+```typescript
+// authApi.ts 예시
+import { axiosInstance } from '../../utils/axiosInstance';
+import { LoginRequest, AuthResponse } from '../../types/api';
+
+export const authService = {
+  // 로그인 API 호출
+  async login(loginData: LoginRequest): Promise<AuthResponse> {
+    const response = await axiosInstance.post<AuthResponse>('/api/auth/login', loginData);
+    return response.data;
+  },
+
+  // 사용자 프로필 조회
+  async getUserProfile(): Promise<User> {
+    const response = await axiosInstance.get<User>('/api/auth/profile');
+    return response.data;
+  },
+};
+```
+
+### 에러 처리 패턴
+```typescript
+// 컴포넌트에서 API 호출 시 에러 처리
+const handleApiCall = async () => {
+  try {
+    setIsLoading(true);
+    const result = await authService.login(loginData);
+    // 성공 처리
+    onLoginSuccess(result.user);
+  } catch (error: any) {
+    // 구체적인 에러 메시지 표시
+    let errorMessage = '로그인에 실패했습니다. 다시 시도해주세요.';
+    if (error.response?.data?.error) {
+      errorMessage = error.response.data.error;
+    } else if (error.message) {
+      errorMessage = error.message;
+    }
+    Alert.alert('로그인 실패', errorMessage);
+  } finally {
+    setIsLoading(false);
+  }
+};
+```
+
+## 🎨 스타일링 가이드
+
+### 스타일 파일 구조
+각 화면/컴포넌트는 별도의 스타일 파일을 가집니다:
+- `mobile/src/styles/LoginScreen.styles.ts`
+- `mobile/src/styles/colors.ts` (공통 색상)
+
+```typescript
+// LoginScreen.styles.ts
+import { StyleSheet } from 'react-native';
+import { colors } from './colors';
+
+export const loginScreenStyles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.background,
+    padding: 16,
+  },
+  inputField: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+    fontSize: 16,
+  },
+  primaryButton: {
+    backgroundColor: colors.primary,
+    padding: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  primaryButtonText: {
+    color: colors.white,
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+});
+```
+
+## 📱 반응형 레이아웃
+
+### 화면 크기 대응
+```typescript
+import { Dimensions } from 'react-native';
+
+const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+
+const styles = StyleSheet.create({
+  container: {
+    width: screenWidth,
+    minHeight: screenHeight,
+  },
+  responsiveCard: {
+    width: screenWidth > 768 ? '50%' : '90%',
+    alignSelf: 'center',
+  },
+});
+```
+
+## 🔒 보안 및 최적화
+
+### 환경 변수 사용
+```typescript
+import Config from 'react-native-config';
+
+// 환경 변수 접근
+const apiBaseUrl = Config.API_BASE_URL;
+const isDebugMode = Config.DEBUG_MODE === 'true';
+```
+
+### 성능 최적화
+```typescript
+// React.memo 사용으로 불필요한 리렌더링 방지
+const OptimizedComponent = React.memo<Props>(({ data }) => {
+  return <View>{/* 컴포넌트 내용 */}</View>;
+});
+
+// useCallback으로 함수 메모이제이션
+const handleButtonPress = useCallback(() => {
+  // 버튼 클릭 로직
+}, [dependency]);
+```
+
+## 🧪 테스트 패턴
+
+### 컴포넌트 테스트
+```typescript
+// __tests__/LoginScreen.test.tsx
+import React from 'react';
+import { render, fireEvent } from '@testing-library/react-native';
+import LoginScreen from '../src/screens/LoginScreen';
+
+describe('LoginScreen', () => {
+  it('사용자 입력을 올바르게 처리해야 함', () => {
+    const { getByTestId } = render(<LoginScreen />);
+    
+    const usernameInput = getByTestId('username-input');
+    fireEvent.changeText(usernameInput, 'testuser');
+    
+    expect(usernameInput.props.value).toBe('testuser');
+  });
+});
+```
+
+## 📝 주석 작성 가이드
+
+### 한글 주석 사용
+```typescript
+// 사용자 인증 상태를 관리하는 훅
+const useAuthentication = () => {
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  
+  // 로그인 토큰 검증 및 자동 로그인 처리
+  const validateAuthenticationToken = async () => {
+    try {
+      const token = await getStoredToken();
+      if (token && !isTokenExpired(token)) {
+        setIsAuthenticated(true);
+      }
+    } catch (error) {
+      // 토큰 검증 실패 시 로그아웃 처리
+      await handleLogout();
+    }
+  };
+
+  return { isAuthenticated, validateAuthenticationToken };
+};
+```
+
+## 🚀 빌드 및 배포 고려사항
+
+### 환경별 설정 분리
+- Development: 디버그 모드, 로컬 API
+- Staging: 릴리스 모드, 스테이징 API  
+- Production: 최적화된 릴리스, 프로덕션 API
+
+### 코드 분할 및 최적화
+```typescript
+// 지연 로딩을 통한 번들 크기 최적화
+const LazyLoadedScreen = React.lazy(() => import('./HeavyScreen'));
+
+// 조건부 임포트
+if (__DEV__) {
+  // 개발 환경에서만 로드되는 코드
+  import('./DevTools').then(devTools => devTools.setup());
+}
+```
