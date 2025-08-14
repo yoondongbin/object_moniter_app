@@ -5,7 +5,7 @@ final String apkOutputDir = 'mobile/android/app/build/outputs/apk/release'
 final String iosBuildDir = 'mobile/ios/build/Build/Products/Release-iphonesimulator'
 
 pipeline {
-    agent { label 'mac' } // iOS 빌드를 위해 맥 에이전트 필요
+    agent any // Docker 컨테이너에서 실행
 
     options {
         timestamps()
