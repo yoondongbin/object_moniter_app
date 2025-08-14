@@ -7,8 +7,9 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y \
     gcc \
     g++ \
-    libgl1-mesa-glx \
+    libgl1-mesa-dev \
     libglib2.0-0 \
+    pkg-config \
     && rm -rf /var/lib/apt/lists/*
 
 # Python 의존성 설치
