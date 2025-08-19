@@ -1,4 +1,4 @@
-name: iOS Build (iOS 15.0)
+name: iOS Build (iOS 15.1)
 
 on:
   workflow_dispatch:
@@ -49,7 +49,7 @@ jobs:
         echo "📦 CocoaPods 버전 확인:"
         pod --version
         
-        echo "🔧 iOS 배포 타겟: 15.0 (React Native 0.80.2 요구사항)"
+        echo "🔧 iOS 배포 타겟: 15.1 (React Native 0.80.2 정확한 요구사항)"
         echo "🔄 CocoaPods 의존성 설치 중..."
         cd ios
         
@@ -65,14 +65,14 @@ jobs:
         echo "📱 사용 가능한 시뮬레이터:"
         xcrun simctl list devices available | grep -E "(iPhone|iPad)" | head -10
         
-        echo "🏗️ iOS 앱 빌드 시작 (iOS 15.0+ 타겟)..."
+        echo "🏗️ iOS 앱 빌드 시작 (iOS 15.1+ 타겟)..."
         xcodebuild -workspace ios/mobile.xcworkspace \
           -scheme mobile \
           -configuration Debug \
           -sdk iphonesimulator \
           -derivedDataPath ios/build \
           -destination 'platform=iOS Simulator,name=iPhone 15,OS=latest' \
-          IPHONEOS_DEPLOYMENT_TARGET=15.0 \
+          IPHONEOS_DEPLOYMENT_TARGET=15.1 \
           clean build \
           | xcpretty || true
           
@@ -84,7 +84,7 @@ jobs:
         
         APP_PATH="ios/build/Build/Products/Debug-iphonesimulator/mobile.app"
         if [ -d "$APP_PATH" ]; then
-          echo "✅ iOS 빌드 성공! (iOS 15.0+ 지원)"
+          echo "✅ iOS 빌드 성공! (iOS 15.1+ 지원)"
           echo "📏 앱 크기: $(du -sh "$APP_PATH" | cut -f1)"
           echo "📄 앱 내용:"
           ls -la "$APP_PATH" | head -10
