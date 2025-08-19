@@ -1,4 +1,4 @@
-name: iOS Build (Fixed v2)
+name: iOS Build (iOS 14.0)
 
 on:
   workflow_dispatch:
@@ -43,32 +43,36 @@ jobs:
         rm -rf ~/Library/Developer/Xcode/DerivedData
         echo "✅ 캐시 정리 완료"
         
-    - name: 🍎 CocoaPods 재설치
+    - name: 🍎 CocoaPods 재설치 (iOS 14.0)
       working-directory: mobile
       run: |
         echo "📦 CocoaPods 버전 확인:"
         pod --version
         
+        echo "🔧 iOS 배포 타겟: 14.0"
         echo "🔄 CocoaPods 의존성 설치 중..."
         cd ios
-        pod install --repo-update --clean-install --verbose
         
-    - name: 🏗️ iOS 빌드 (Debug)
+        # 더 안정적인 설치를 위한 추가 옵션
+        pod install --repo-update --clean-install --verbose --deployment
+        
+    - name: 🏗️ iOS 빌드 (Debug - iOS 14.0+)
       working-directory: mobile
       run: |
         echo "🔍 Xcode 버전:"
         xcodebuild -version
         
         echo "📱 사용 가능한 시뮬레이터:"
-        xcrun simctl list devices available
+        xcrun simctl list devices available | grep -E "(iPhone|iPad)" | head -10
         
-        echo "🏗️ iOS 앱 빌드 시작..."
+        echo "🏗️ iOS 앱 빌드 시작 (iOS 14.0+ 타겟)..."
         xcodebuild -workspace ios/mobile.xcworkspace \
           -scheme mobile \
           -configuration Debug \
           -sdk iphonesimulator \
           -derivedDataPath ios/build \
           -destination 'platform=iOS Simulator,name=iPhone 15,OS=latest' \
+          IPHONEOS_DEPLOYMENT_TARGET=14.0 \
           clean build \
           | xcpretty || true
           
@@ -80,13 +84,27 @@ jobs:
         
         APP_PATH="ios/build/Build/Products/Debug-iphonesimulator/mobile.app"
         if [ -d "$APP_PATH" ]; then
-          echo "✅ iOS 빌드 성공!"
+          echo "✅ iOS 빌드 성공! (iOS 14.0+ 지원)"
           echo "📏 앱 크기: $(du -sh "$APP_PATH" | cut -f1)"
           echo "📄 앱 내용:"
-          ls -la "$APP_PATH"
+          ls -la "$APP_PATH" | head -10
+          
+          # Info.plist에서 최소 iOS 버전 확인
+          if [ -f "$APP_PATH/Info.plist" ]; then
+            echo "📋 앱 정보:"
+            /usr/libexec/PlistBuddy -c "Print :MinimumOSVersion" "$APP_PATH/Info.plist" 2>/dev/null || echo "MinimumOSVersion 정보 없음"
+          fi
         else
           echo "❌ 빌드 실패 - mobile.app을 찾을 수 없습니다"
           echo "📂 Debug-iphonesimulator 디렉터리 내용:"
           ls -la ios/build/Build/Products/Debug-iphonesimulator/ 2>/dev/null || echo "디렉터리가 존재하지 않습니다"
           exit 1
         fi
+        
+    - name: 📤 빌드 아티팩트 업로드 (선택사항)
+      if: success()
+      uses: actions/upload-artifact@v4
+      with:
+        name: ios-app-debug-${{ github.run_number }}
+        path: mobile/ios/build/Build/Products/Debug-iphonesimulator/mobile.app
+        retention-days: 7

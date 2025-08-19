@@ -5,7 +5,7 @@ require Pod::Executable.execute_command('node', ['-p',
     {paths: [process.argv[1]]},
   )', __dir__]).strip
 
-platform :ios, '13.0'
+platform :ios, '14.0'  # 13.0 → 14.0으로 변경
 prepare_react_native_project!
 
 linkage = ENV['USE_FRAMEWORKS']
@@ -24,7 +24,7 @@ target 'mobile' do
   )
 
   post_install do |installer|
-    # https://github.com/facebook/react-native/blob/main/packages/react-native/scripts/react_native_pods.rb#L197-L202
+    # https://github.com/facebook/react-native/scripts/react_native_pods.rb#L197-L202
     react_native_post_install(
       installer,
       config[:reactNativePath],
@@ -32,10 +32,10 @@ target 'mobile' do
       # :ccache_enabled => true
     )
     
-    # 모든 타겟의 iOS 배포 버전을 13.0으로 통일
+    # 모든 타겟의 iOS 배포 버전을 14.0으로 통일
     installer.pods_project.targets.each do |target|
       target.build_configurations.each do |config|
-        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.0'
+        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '14.0'  # 13.0 → 14.0으로 변경
       end
     end
   end
