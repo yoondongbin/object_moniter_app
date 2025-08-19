@@ -69,15 +69,11 @@ jobs:
         echo "🏗️ iOS 앱 빌드 시작 (Release)..."
         # 우선 generic 대상 시도, 실패 시 첫 번째 사용 가능한 iPhone 시뮬레이터 이름으로 재시도
         DEST_GENERIC="generic/platform=iOS Simulator"
-        # 첫 번째 사용 가능한 iPhone 시뮬레이터 이름 추출 (공백 포함 전체 이름)
-        FIRST_IPHONE_NAME=$(xcrun simctl list devices available \
-          | sed -n 's/^[[:space:]]*\(iPhone.*\) (.*$/\1/p' \
-          | head -1) || true
+        # 첫 번째 사용 가능한 iPhone 시뮬레이터 라인과 이름 추출
+        SIM_LINE=$(xcrun simctl list devices available | awk '/^[[:space:]]+iPhone/ {print; exit}') || true
+        FIRST_IPHONE_NAME=$(echo "$SIM_LINE" | sed -E 's/^\s*([^()]+)\s*\(.*/\1/') || true
         if [ -z "${FIRST_IPHONE_NAME}" ]; then
-          # 보조 파서 (숫자 모델 우선)
-          FIRST_IPHONE_NAME=$(xcrun simctl list devices available \
-            | sed -n 's/^[[:space:]]*\(iPhone [0-9][^)]*\) (.*$/\1/p' \
-            | head -1) || true
+          FIRST_IPHONE_NAME=$(xcrun simctl list devices available | awk '/^[[:space:]]+iPhone/ {sub(/^ +/, ""); split($0,a," ("); print a[1]; exit}') || true
         fi
         if [ -z "${FIRST_IPHONE_NAME}" ]; then
           FIRST_IPHONE_NAME="iPhone 16 Pro"  # 최후의 기본값
