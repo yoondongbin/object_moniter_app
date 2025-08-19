@@ -1,4 +1,4 @@
-name: iOS Build (Fixed)
+name: iOS Build (Fixed v2)
 
 on:
   workflow_dispatch:
@@ -29,39 +29,64 @@ jobs:
         echo "API_BASE_URL=https://api.example.com" >> .env
         echo "TIMEOUT=15000" >> .env
         echo "DEBUG_MODE=true" >> .env
+        echo "📄 환경 파일 생성 완료:"
+        cat .env
         
-    - name: 🧹 iOS 캐시 정리
+    - name: 🧹 iOS 캐시 완전 정리
       working-directory: mobile
       run: |
+        echo "🗑️ 기존 빌드 파일 정리..."
         rm -rf ios/build
         rm -rf ios/Pods
-        rm -f ios/Podfile.lock
+        rm -rf ios/Podfile.lock
+        rm -rf ~/Library/Caches/CocoaPods
+        rm -rf ~/Library/Developer/Xcode/DerivedData
+        echo "✅ 캐시 정리 완료"
         
-    - name: 🍎 CocoaPods 설치
+    - name: 🍎 CocoaPods 재설치
       working-directory: mobile
       run: |
+        echo "📦 CocoaPods 버전 확인:"
+        pod --version
+        
+        echo "🔄 CocoaPods 의존성 설치 중..."
         cd ios
-        pod install --clean-install --verbose
+        pod install --repo-update --clean-install --verbose
         
     - name: 🏗️ iOS 빌드 (Debug)
       working-directory: mobile
       run: |
+        echo "🔍 Xcode 버전:"
+        xcodebuild -version
+        
+        echo "📱 사용 가능한 시뮬레이터:"
+        xcrun simctl list devices available
+        
+        echo "🏗️ iOS 앱 빌드 시작..."
         xcodebuild -workspace ios/mobile.xcworkspace \
           -scheme mobile \
           -configuration Debug \
           -sdk iphonesimulator \
           -derivedDataPath ios/build \
           -destination 'platform=iOS Simulator,name=iPhone 15,OS=latest' \
-          clean build
+          clean build \
+          | xcpretty || true
           
     - name: 📦 빌드 결과 확인
       working-directory: mobile
       run: |
-        find ios/build -name "*.app" -type d
-        if [ -d "ios/build/Build/Products/Debug-iphonesimulator/mobile.app" ]; then
+        echo "📂 빌드 디렉터리 구조:"
+        find ios/build -name "*.app" -type d 2>/dev/null || echo "❌ .app 파일을 찾을 수 없습니다"
+        
+        APP_PATH="ios/build/Build/Products/Debug-iphonesimulator/mobile.app"
+        if [ -d "$APP_PATH" ]; then
           echo "✅ iOS 빌드 성공!"
-          ls -la ios/build/Build/Products/Debug-iphonesimulator/mobile.app/
+          echo "📏 앱 크기: $(du -sh "$APP_PATH" | cut -f1)"
+          echo "📄 앱 내용:"
+          ls -la "$APP_PATH"
         else
-          echo "❌ 빌드 실패"
+          echo "❌ 빌드 실패 - mobile.app을 찾을 수 없습니다"
+          echo "📂 Debug-iphonesimulator 디렉터리 내용:"
+          ls -la ios/build/Build/Products/Debug-iphonesimulator/ 2>/dev/null || echo "디렉터리가 존재하지 않습니다"
           exit 1
         fi
