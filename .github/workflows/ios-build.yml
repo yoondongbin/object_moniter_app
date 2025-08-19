@@ -90,46 +90,46 @@ jobs:
           set -euo pipefail
 
           # ▷ 선호 런타임(18.0 → 17.5) 순으로 탐색
-          선택_런타임_ID=""
+          SELECTED_RUNTIME_ID=""
           for RUNTIME in "$PREFERRED_RUNTIME_1" "$PREFERRED_RUNTIME_2"; do
-            후보=$(xcrun simctl list runtimes | awk -v r="$RUNTIME" -F '[()]' '$0 ~ r {print $2; exit}')
-            if [ -n "${후보:-}" ]; then
-              선택_런타임_ID="$후보"
+            CANDIDATE=$(xcrun simctl list runtimes | awk -v r="$RUNTIME" -F '[()]' '$0 ~ r {print $2; exit}')
+            if [ -n "${CANDIDATE:-}" ]; then
+              SELECTED_RUNTIME_ID="$CANDIDATE"
               break
             fi
           done
 
-          if [ -z "${선택_런타임_ID:-}" ]; then
+          if [ -z "${SELECTED_RUNTIME_ID:-}" ]; then
             echo "❌ 사용할 iOS 시뮬레이터 런타임을 찾지 못했습니다."
             echo "   runs-on 이미지를 macos-15로 고정했는지, 혹은 이미지에 iOS 18.0/17.5가 있는지 확인하세요."
             exit 1
           fi
-          echo "✅ 선택된 런타임: ${선택_런타임_ID}"
+          echo "✅ 선택된 런타임: ${SELECTED_RUNTIME_ID}"
 
           # ▷ 선호 기기(16 → 15 → 14) 순으로 존재 확인
-          선택_디바이스="$PREFERRED_DEVICE_1"
+          SELECTED_DEVICE="$PREFERRED_DEVICE_1"
           if ! xcrun simctl list devicetypes | grep -q "^$PREFERRED_DEVICE_1 ("; then
             if xcrun simctl list devicetypes | grep -q "^$PREFERRED_DEVICE_2 ("; then
-              선택_디바이스="$PREFERRED_DEVICE_2"
+              SELECTED_DEVICE="$PREFERRED_DEVICE_2"
             elif xcrun simctl list devicetypes | grep -q "^$PREFERRED_DEVICE_3 ("; then
-              선택_디바이스="$PREFERRED_DEVICE_3"
+              SELECTED_DEVICE="$PREFERRED_DEVICE_3"
             else
               echo "❌ 사용할 iPhone 디바이스 타입을 찾지 못했습니다."
               xcrun simctl list devicetypes
               exit 1
             fi
           fi
-          echo "✅ 선택된 디바이스: ${선택_디바이스}"
+          echo "✅ 선택된 디바이스: ${SELECTED_DEVICE}"
 
           # ▷ 시뮬레이터 생성 → 부팅 → 부팅완료 대기
-          생성_UDID=$(xcrun simctl create "CI-${선택_디바이스// /}-Auto" "$선택_디바이스" "$선택_런타임_ID")
-          echo "🆔 생성된 UDID: $생성_UDID"
+          CREATED_UDID=$(xcrun simctl create "CI-${SELECTED_DEVICE// /}-Auto" "$SELECTED_DEVICE" "$SELECTED_RUNTIME_ID")
+          echo "🆔 생성된 UDID: $CREATED_UDID"
 
-          xcrun simctl boot "$생성_UDID"
-          xcrun simctl bootstatus "$생성_UDID" -b
+          xcrun simctl boot "$CREATED_UDID"
+          xcrun simctl bootstatus "$CREATED_UDID" -b
 
           # ▷ 이후 단계에서 사용할 환경변수로 등록
-          echo "SIMULATOR_UDID=$생성_UDID" >> $GITHUB_ENV
+          echo "SIMULATOR_UDID=$CREATED_UDID" >> $GITHUB_ENV
 
       # (옵션) xcpretty 설치 — 로그 가독성 향상. 실패해도 빌드 진행
       - name: 🧴 xcpretty 설치(옵션)
