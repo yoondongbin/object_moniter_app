@@ -1,0 +1,64 @@
+name: iOS Build
+
+on:
+  workflow_dispatch:  # 수동 실행 가능
+
+jobs:
+  ios-build:
+    runs-on: macos-latest
+    
+    steps:
+    - name: 📥 코드 체크아웃
+      uses: actions/checkout@v4
+      
+    - name: 🔧 Node.js 설정
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'yarn'
+        cache-dependency-path: mobile/yarn.lock
+        
+    - name: 📦 의존성 설치
+      working-directory: mobile
+      run: yarn install --frozen-lockfile
+        
+    - name: ⚙️ 환경 설정
+      working-directory: mobile
+      env:
+        APP_ENV: staging
+        API_BASE_URL: https://api.example.com
+        BUILD_NUMBER: ${{ github.run_number }}
+      run: ./scripts/ci-make-env.sh
+        
+    - name: 🍎 CocoaPods 설치
+      working-directory: mobile
+      run: npx pod-install ios
+        
+    - name: 🏗️ iOS 빌드
+      working-directory: mobile
+      run: |
+        xcodebuild -workspace ios/mobile.xcworkspace \
+          -scheme mobile \
+          -configuration Release \
+          -sdk iphonesimulator \
+          -derivedDataPath ios/build \
+          clean build
+          
+    - name: 📦 앱 압축
+      working-directory: mobile
+      run: |
+        cd ios/build/Build/Products/Release-iphonesimulator
+        if [ -d "mobile.app" ]; then
+          zip -r mobile-staging-${{ github.run_number }}.app.zip mobile.app
+          echo "✅ iOS 앱 빌드 및 압축 완료"
+        else
+          echo "❌ mobile.app을 찾을 수 없습니다"
+          exit 1
+        fi
+        
+    - name: 📤 아티팩트 업로드
+      uses: actions/upload-artifact@v4
+      with:
+        name: ios-app-staging-${{ github.run_number }}
+        path: mobile/ios/build/Build/Products/Release-iphonesimulator/*.zip
+        retention-days: 30
