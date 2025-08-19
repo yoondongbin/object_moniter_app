@@ -1,7 +1,7 @@
-name: iOS Build (Debug)
+name: iOS Build (Fixed)
 
 on:
-  workflow_dispatch:  # 수동 실행 가능
+  workflow_dispatch:
 
 jobs:
   ios-build:
@@ -29,42 +29,39 @@ jobs:
         echo "API_BASE_URL=https://api.example.com" >> .env
         echo "TIMEOUT=15000" >> .env
         echo "DEBUG_MODE=true" >> .env
-        echo "📄 환경 파일 내용:"
-        cat .env
+        
+    - name: 🧹 iOS 캐시 정리
+      working-directory: mobile
+      run: |
+        rm -rf ios/build
+        rm -rf ios/Pods
+        rm -f ios/Podfile.lock
         
     - name: 🍎 CocoaPods 설치
       working-directory: mobile
-      run: npx pod-install ios
+      run: |
+        cd ios
+        pod install --clean-install --verbose
         
-    - name: 🏗️ iOS 빌드 (디버그 모드)
+    - name: 🏗️ iOS 빌드 (Debug)
       working-directory: mobile
       run: |
-        echo "🔍 Xcode 버전 확인:"
-        xcodebuild -version
-        
-        echo "📂 프로젝트 구조 확인:"
-        ls -la ios/
-        
-        echo "🏗️ iOS 빌드 시작 (Debug 모드):"
         xcodebuild -workspace ios/mobile.xcworkspace \
           -scheme mobile \
           -configuration Debug \
           -sdk iphonesimulator \
           -derivedDataPath ios/build \
-          build
+          -destination 'platform=iOS Simulator,name=iPhone 15,OS=latest' \
+          clean build
           
     - name: 📦 빌드 결과 확인
       working-directory: mobile
       run: |
-        echo "📂 빌드 결과 확인:"
         find ios/build -name "*.app" -type d
-        ls -la ios/build/Build/Products/Debug-iphonesimulator/ || true
-        
         if [ -d "ios/build/Build/Products/Debug-iphonesimulator/mobile.app" ]; then
-          echo "✅ mobile.app 발견!"
+          echo "✅ iOS 빌드 성공!"
           ls -la ios/build/Build/Products/Debug-iphonesimulator/mobile.app/
         else
-          echo "❌ mobile.app을 찾을 수 없습니다"
-          echo "📂 전체 빌드 디렉터리 구조:"
-          find ios/build -type d -name "*.app" || true
+          echo "❌ 빌드 실패"
+          exit 1
         fi
