@@ -56,6 +56,18 @@ jobs:
         # 더 안정적인 설치를 위한 옵션 (배포 모드 비활성화: Podfile 변경사항 반영)
         pod install --repo-update --clean-install --verbose
         
+    - name: 🧩 iOS 시뮬레이터 런타임 설치 (필요 시)
+      run: |
+        echo "🔎 현재 Xcode 경로: $(xcode-select -p)"
+        echo "📚 설치된 SDK 목록:"
+        xcodebuild -showsdks || true
+        echo "🧰 Xcode First Launch 처리"
+        sudo xcodebuild -runFirstLaunch || true
+        echo "⬇️ iOS 플랫폼/시뮬레이터 런타임 다운로드 (필요 시)"
+        sudo xcodebuild -downloadPlatform iOS || true
+        echo "🧪 설치된 시뮬레이터 런타임 확인:"
+        xcrun simctl list runtimes || true
+        
     - name: 🏗️ iOS 빌드 (Release - iOS 15.1+)
       working-directory: mobile
       run: |
