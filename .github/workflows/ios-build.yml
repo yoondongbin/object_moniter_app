@@ -1,160 +1,198 @@
-name: iOS Build (iOS 15.1)
+name: iOS Build (iOS 15.1+)
 
 on:
   workflow_dispatch:
 
 jobs:
   ios-build:
-    runs-on: macos-latest
-    
+    # ✅ 러너 이미지 고정 (Xcode 16 포함). latest 사용 시 런타임 편차로 실패할 수 있음
+    runs-on: macos-15
+
+    env:
+      # ▶ 프로젝트/스킴 관련 공통 변수(필요 시 한 곳만 수정)
+      APP_WORKSPACE: ios/mobile.xcworkspace        # Xcode 워크스페이스 경로
+      APP_SCHEME: mobile                           # Shared 체크된 스킴명
+      DERIVED_DATA: mobile/ios/build               # 파생 데이터 경로
+      IOS_MIN_TARGET: "15.1"                       # iOS 최소 지원 버전(프로젝트와 일치)
+      # ▶ 생성할 시뮬레이터 선호 순서(기기/런타임 폴백 포함)
+      PREFERRED_DEVICE_1: "iPhone 16"
+      PREFERRED_DEVICE_2: "iPhone 15"
+      PREFERRED_DEVICE_3: "iPhone 14"
+      PREFERRED_RUNTIME_1: "iOS 18.0"
+      PREFERRED_RUNTIME_2: "iOS 17.5"
+
     steps:
-    - name: 📥 코드 체크아웃
-      uses: actions/checkout@v4
-      
-    - name: 🔧 Node.js 설정
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20'
-        cache: 'yarn'
-        cache-dependency-path: mobile/yarn.lock
-        
-    - name: 📦 의존성 설치
-      working-directory: mobile
-      run: yarn install --frozen-lockfile
-        
-    - name: ⚙️ 환경 설정
-      working-directory: mobile
-      run: |
-        echo "APP_ENV=staging" > .env
-        echo "API_BASE_URL=https://api.example.com" >> .env
-        echo "TIMEOUT=15000" >> .env
-        echo "DEBUG_MODE=true" >> .env
-        echo "📄 환경 파일 생성 완료:"
-        cat .env
-        
-    - name: 🧹 iOS 캐시 완전 정리
-      working-directory: mobile
-      run: |
-        echo "🗑️ 기존 빌드 파일 정리..."
-        rm -rf ios/build
-        rm -rf ios/Pods
-        rm -rf ios/Podfile.lock
-        rm -rf ~/Library/Caches/CocoaPods
-        rm -rf ~/Library/Developer/Xcode/DerivedData
-        echo "✅ 캐시 정리 완료"
-        
-    - name: 🍎 CocoaPods 재설치 (iOS 15.1)
-      working-directory: mobile
-      run: |
-        echo "📦 CocoaPods 버전 확인:"
-        pod --version
-        
-        echo "🔧 iOS 배포 타겟: 15.1 (React Native 0.80.2 정확한 요구사항)"
-        echo "🔄 CocoaPods 의존성 설치 중..."
-        cd ios
-        
-        # 더 안정적인 설치를 위한 옵션 (배포 모드 비활성화: Podfile 변경사항 반영)
-        pod install --repo-update --clean-install --verbose
-        
-    - name: 🧩 iOS 시뮬레이터 런타임 설치 (필요 시)
-      run: |
-        echo "🔎 현재 Xcode 경로: $(xcode-select -p)"
-        echo "📚 설치된 SDK 목록:"
-        xcodebuild -showsdks || true
-        echo "🧰 Xcode First Launch 처리"
-        sudo xcodebuild -runFirstLaunch || true
-        echo "⬇️ iOS 플랫폼/시뮬레이터 런타임 다운로드 (필요 시)"
-        sudo xcodebuild -downloadPlatform iOS || true
-        echo "🧪 설치된 시뮬레이터 런타임 확인:"
-        xcrun simctl list runtimes || true
-        
-    - name: 🏗️ iOS 빌드 (Release - iOS 15.1+)
-      working-directory: mobile
-      run: |
-        set -euo pipefail
-        echo "🔍 Xcode 버전:"
-        xcodebuild -version
+      # 1) 코드 체크아웃
+      - name: 📥 코드 체크아웃
+        uses: actions/checkout@v4
 
-        echo "📱 사용 가능한 시뮬레이터 (상위 10개):"
-        xcrun simctl list devices available | grep -E "(iPhone|iPad)" | head -10 || true
+      # 2) Node 설정 + Yarn 캐시
+      - name: 🔧 Node.js 설정
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'yarn'
+          cache-dependency-path: mobile/yarn.lock
 
-        echo "🏗️ iOS 앱 빌드 시작 (Release)..."
-        # 우선 generic 대상 시도, 실패 시 첫 번째 사용 가능한 iPhone 시뮬레이터 이름으로 재시도
-        DEST_GENERIC="generic/platform=iOS Simulator"
-        # 첫 번째 사용 가능한 iPhone 시뮬레이터 라인과 이름 추출
-        SIM_LINE=$(xcrun simctl list devices available | awk '/^[[:space:]]+iPhone/ {print; exit}') || true
-        FIRST_IPHONE_NAME=$(echo "$SIM_LINE" | sed -E 's/^\s*([^()]+)\s*\(.*/\1/') || true
-        if [ -z "${FIRST_IPHONE_NAME}" ]; then
-          FIRST_IPHONE_NAME=$(xcrun simctl list devices available | awk '/^[[:space:]]+iPhone/ {sub(/^ +/, ""); split($0,a," ("); print a[1]; exit}') || true
-        fi
-        if [ -z "${FIRST_IPHONE_NAME}" ]; then
-          FIRST_IPHONE_NAME="iPhone 16 Pro"  # 최후의 기본값
-        fi
-        DEST_BY_NAME="platform=iOS Simulator,OS=latest,name=${FIRST_IPHONE_NAME}"
+      # 3) 의존성 설치
+      - name: 📦 의존성 설치
+        working-directory: mobile
+        run: yarn install --frozen-lockfile
 
-        echo "🔎 1차 대상: ${DEST_GENERIC}"
-        set +e
-        xcodebuild -workspace ios/mobile.xcworkspace \
-          -scheme mobile \
-          -configuration Release \
-          -sdk iphonesimulator \
-          -derivedDataPath ios/build \
-          -destination "${DEST_GENERIC}" \
-          IPHONEOS_DEPLOYMENT_TARGET=15.1 \
-          clean build | xcpretty
-        XC_STATUS=$?
-        set -e
+      # 4) .env 생성 (필요 시 수정)
+      - name: ⚙️ 환경 설정(.env 생성)
+        working-directory: mobile
+        run: |
+          set -euo pipefail
+          echo "APP_ENV=staging" > .env
+          echo "API_BASE_URL=https://api.example.com" >> .env
+          echo "TIMEOUT=15000" >> .env
+          echo "DEBUG_MODE=true" >> .env
+          echo "📄 생성된 .env 내용 ↓"
+          cat .env
 
-        if [ ${XC_STATUS} -ne 0 ]; then
-          echo "⚠️ generic 대상 실패 → 이름 기반 대상 재시도: ${DEST_BY_NAME}"
-          if [ -z "${FIRST_IPHONE_NAME}" ]; then
-            echo "❗ 시뮬레이터 이름 추출 실패 → destination 미지정으로 재시도"
-            xcodebuild -workspace ios/mobile.xcworkspace \
-              -scheme mobile \
-              -configuration Release \
-              -sdk iphonesimulator \
-              -derivedDataPath ios/build \
-              IPHONEOS_DEPLOYMENT_TARGET=15.1 \
-              clean build | xcpretty
-          else
-          xcodebuild -workspace ios/mobile.xcworkspace \
-            -scheme mobile \
+      # 5) iOS 빌드 캐시 정리(깨끗한 상태 보장)
+      - name: 🧹 iOS 캐시 완전 정리
+        working-directory: mobile
+        run: |
+          set -euo pipefail
+          echo "🗑️ 기존 빌드/파드/파생 데이터 삭제"
+          rm -rf ios/build ios/Pods ios/Podfile.lock
+          rm -rf ~/Library/Caches/CocoaPods ~/Library/Developer/Xcode/DerivedData
+          echo "✅ 캐시 정리 완료"
+
+      # 6) CocoaPods 설치
+      - name: 🍎 CocoaPods 설치/동기화
+        working-directory: mobile/ios
+        run: |
+          set -euo pipefail
+          echo "📦 CocoaPods 버전 확인:"
+          pod --version
+          # Podfile 의 platform :ios, '15.1' 과 일치하는지 확인 필요
+          echo "🔄 pod install 실행"
+          pod install --repo-update --clean-install --verbose
+
+      # 7) Xcode/런타임 기본 정보 출력(디버깅 용)
+      - name: 🧩 Xcode/런타임 점검
+        run: |
+          set -euo pipefail
+          echo "🔎 Xcode 경로: $(xcode-select -p)"
+          xcodebuild -version
+          echo "📚 설치된 런타임 목록:"
+          xcrun simctl list runtimes
+          echo "📱 사용가능 디바이스(available):"
+          xcrun simctl list devices available
+
+      # 8) iOS 시뮬레이터 생성 및 부팅(UDID 획득) — 런타임/기기 폴백 포함
+      - name: 🧪 iOS 시뮬레이터 생성 및 부팅 (UDID 지정)
+        id: boot-sim
+        run: |
+          set -euo pipefail
+
+          # ▷ 선호 런타임(18.0 → 17.5) 순으로 탐색
+          선택_런타임_ID=""
+          for RUNTIME in "$PREFERRED_RUNTIME_1" "$PREFERRED_RUNTIME_2"; do
+            후보=$(xcrun simctl list runtimes | awk -v r="$RUNTIME" -F '[()]' '$0 ~ r {print $2; exit}')
+            if [ -n "${후보:-}" ]; then
+              선택_런타임_ID="$후보"
+              break
+            fi
+          done
+
+          if [ -z "${선택_런타임_ID:-}" ]; then
+            echo "❌ 사용할 iOS 시뮬레이터 런타임을 찾지 못했습니다."
+            echo "   runs-on 이미지를 macos-15로 고정했는지, 혹은 이미지에 iOS 18.0/17.5가 있는지 확인하세요."
+            exit 1
+          fi
+          echo "✅ 선택된 런타임: ${선택_런타임_ID}"
+
+          # ▷ 선호 기기(16 → 15 → 14) 순으로 존재 확인
+          선택_디바이스="$PREFERRED_DEVICE_1"
+          if ! xcrun simctl list devicetypes | grep -q "^$PREFERRED_DEVICE_1 ("; then
+            if xcrun simctl list devicetypes | grep -q "^$PREFERRED_DEVICE_2 ("; then
+              선택_디바이스="$PREFERRED_DEVICE_2"
+            elif xcrun simctl list devicetypes | grep -q "^$PREFERRED_DEVICE_3 ("; then
+              선택_디바이스="$PREFERRED_DEVICE_3"
+            else
+              echo "❌ 사용할 iPhone 디바이스 타입을 찾지 못했습니다."
+              xcrun simctl list devicetypes
+              exit 1
+            fi
+          fi
+          echo "✅ 선택된 디바이스: ${선택_디바이스}"
+
+          # ▷ 시뮬레이터 생성 → 부팅 → 부팅완료 대기
+          생성_UDID=$(xcrun simctl create "CI-${선택_디바이스// /}-Auto" "$선택_디바이스" "$선택_런타임_ID")
+          echo "🆔 생성된 UDID: $생성_UDID"
+
+          xcrun simctl boot "$생성_UDID"
+          xcrun simctl bootstatus "$생성_UDID" -b
+
+          # ▷ 이후 단계에서 사용할 환경변수로 등록
+          echo "SIMULATOR_UDID=$생성_UDID" >> $GITHUB_ENV
+
+      # (옵션) xcpretty 설치 — 로그 가독성 향상. 실패해도 빌드 진행
+      - name: 🧴 xcpretty 설치(옵션)
+        run: |
+          set -euo pipefail
+          sudo gem install xcpretty || true
+
+      # 9) iOS 빌드 (시뮬레이터, Release) — UDID로 명확히 타깃
+      - name: 🏗️ iOS 빌드 (Release, Simulator)
+        working-directory: mobile
+        run: |
+          set -euo pipefail
+          echo "🔨 빌드 시작…"
+          xcodebuild \
+            -workspace "$APP_WORKSPACE" \
+            -scheme "$APP_SCHEME" \
             -configuration Release \
             -sdk iphonesimulator \
-            -derivedDataPath ios/build \
-            -destination "${DEST_BY_NAME}" -destination-timeout 120 \
-            IPHONEOS_DEPLOYMENT_TARGET=15.1 \
-            clean build | xcpretty
+            -derivedDataPath "$DERIVED_DATA" \
+            -destination "platform=iOS Simulator,id=$SIMULATOR_UDID" \
+            IPHONEOS_DEPLOYMENT_TARGET="$IOS_MIN_TARGET" \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO \
+            clean build | xcpretty || true
+
+      # 10) 빌드 결과 검증(.app 존재 여부 및 MinOS 확인)
+      - name: 📦 빌드 결과 확인
+        working-directory: mobile
+        run: |
+          set -euo pipefail
+          echo "📂 .app 검색:"
+          APP_PATH=$(find "$DERIVED_DATA/Build/Products" -type d -name "*.app" | head -1 || true)
+          if [ -n "${APP_PATH:-}" ] && [ -d "$APP_PATH" ]; then
+            echo "✅ iOS 빌드 성공"
+            echo "APP_PATH: $APP_PATH"
+            du -sh "$APP_PATH" || true
+            ls -la "$APP_PATH" | head -20 || true
+            if [ -f "$APP_PATH/Info.plist" ]; then
+              echo "📋 MinimumOSVersion:"
+              /usr/libexec/PlistBuddy -c 'Print :MinimumOSVersion' "$APP_PATH/Info.plist" || echo "N/A"
+            fi
+          else
+            echo "❌ .app을 찾지 못했습니다. 위 빌드 로그를 확인하세요."
+            echo "📂 Products 디렉터리 구조:"
+            find "$DERIVED_DATA/Build/Products" -maxdepth 3 -type d -print || true
+            exit 1
           fi
-        fi
-          
-    - name: 📦 빌드 결과 확인
-      working-directory: mobile
-      run: |
-        echo "📂 빌드 결과에서 .app 검색:"
-        APP_PATH=$(find ios/build/Build/Products -type d -name "*.app" | head -1 || true)
-        if [ -n "$APP_PATH" ] && [ -d "$APP_PATH" ]; then
-          echo "✅ iOS 빌드 성공! (iOS 15.1+ 지원)"
-          echo "📄 APP_PATH: $APP_PATH"
-          echo "📏 앱 크기: $(du -sh "$APP_PATH" | cut -f1)"
-          echo "📄 앱 내용:"
-          ls -la "$APP_PATH" | head -10
-          
-          # Info.plist에서 최소 iOS 버전 확인
-          if [ -f "$APP_PATH/Info.plist" ]; then
-            echo "📋 MinimumOSVersion: $(/usr/libexec/PlistBuddy -c 'Print :MinimumOSVersion' "$APP_PATH/Info.plist" 2>/dev/null || echo 'N/A')"
+
+      # 11) 빌드 아티팩트 업로드(선택)
+      - name: ⬆️ 빌드 아티팩트 업로드 (선택)
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-app-release-${{ github.run_number }}
+          path: mobile/ios/build/Build/Products/**/*.app
+          retention-days: 7
+
+      # 12) (정리) 생성한 시뮬레이터 삭제 — 러너 자원 반환
+      - name: 🧽 시뮬레이터 정리
+        if: always()
+        run: |
+          set -euo pipefail
+          if [ -n "${SIMULATOR_UDID:-}" ]; then
+            echo "🧹 시뮬레이터 삭제: $SIMULATOR_UDID"
+            xcrun simctl shutdown "$SIMULATOR_UDID" || true
+            xcrun simctl delete "$SIMULATOR_UDID" || true
           fi
-        else
-          echo "❌ mobile.app을 찾을 수 없습니다. 빌드 로그 상단 단계를 확인하세요."
-          echo "📂 Products 디렉터리 구조:"
-          find ios/build/Build/Products -maxdepth 3 -type d -print || true
-          exit 1
-        fi
-        
-    - name: 📤 빌드 아티팩트 업로드 (선택사항)
-      if: success()
-      uses: actions/upload-artifact@v4
-      with:
-        name: ios-app-release-${{ github.run_number }}
-        path: mobile/ios/build/Build/Products/**/*.app
-        retention-days: 7
