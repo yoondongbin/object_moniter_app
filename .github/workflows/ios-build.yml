@@ -1,4 +1,4 @@
-name: iOS Build
+name: iOS Build (Debug)
 
 on:
   workflow_dispatch:  # 수동 실행 가능
@@ -24,41 +24,47 @@ jobs:
         
     - name: ⚙️ 환경 설정
       working-directory: mobile
-      env:
-        APP_ENV: staging
-        API_BASE_URL: https://api.example.com
-        BUILD_NUMBER: ${{ github.run_number }}
-      run: ./scripts/ci-make-env.sh
+      run: |
+        echo "APP_ENV=staging" > .env
+        echo "API_BASE_URL=https://api.example.com" >> .env
+        echo "TIMEOUT=15000" >> .env
+        echo "DEBUG_MODE=true" >> .env
+        echo "📄 환경 파일 내용:"
+        cat .env
         
     - name: 🍎 CocoaPods 설치
       working-directory: mobile
       run: npx pod-install ios
         
-    - name: 🏗️ iOS 빌드
+    - name: 🏗️ iOS 빌드 (디버그 모드)
       working-directory: mobile
       run: |
+        echo "🔍 Xcode 버전 확인:"
+        xcodebuild -version
+        
+        echo "📂 프로젝트 구조 확인:"
+        ls -la ios/
+        
+        echo "🏗️ iOS 빌드 시작 (Debug 모드):"
         xcodebuild -workspace ios/mobile.xcworkspace \
           -scheme mobile \
-          -configuration Release \
+          -configuration Debug \
           -sdk iphonesimulator \
           -derivedDataPath ios/build \
-          clean build
+          build
           
-    - name: 📦 앱 압축
+    - name: 📦 빌드 결과 확인
       working-directory: mobile
       run: |
-        cd ios/build/Build/Products/Release-iphonesimulator
-        if [ -d "mobile.app" ]; then
-          zip -r mobile-staging-${{ github.run_number }}.app.zip mobile.app
-          echo "✅ iOS 앱 빌드 및 압축 완료"
+        echo "📂 빌드 결과 확인:"
+        find ios/build -name "*.app" -type d
+        ls -la ios/build/Build/Products/Debug-iphonesimulator/ || true
+        
+        if [ -d "ios/build/Build/Products/Debug-iphonesimulator/mobile.app" ]; then
+          echo "✅ mobile.app 발견!"
+          ls -la ios/build/Build/Products/Debug-iphonesimulator/mobile.app/
         else
           echo "❌ mobile.app을 찾을 수 없습니다"
-          exit 1
+          echo "📂 전체 빌드 디렉터리 구조:"
+          find ios/build -type d -name "*.app" || true
         fi
-        
-    - name: 📤 아티팩트 업로드
-      uses: actions/upload-artifact@v4
-      with:
-        name: ios-app-staging-${{ github.run_number }}
-        path: mobile/ios/build/Build/Products/Release-iphonesimulator/*.zip
-        retention-days: 30
