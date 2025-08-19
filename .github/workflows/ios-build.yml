@@ -43,7 +43,7 @@ jobs:
         rm -rf ~/Library/Developer/Xcode/DerivedData
         echo "✅ 캐시 정리 완료"
         
-    - name: 🍎 CocoaPods 재설치 (iOS 15.0)
+    - name: 🍎 CocoaPods 재설치 (iOS 15.1)
       working-directory: mobile
       run: |
         echo "📦 CocoaPods 버전 확인:"
@@ -53,8 +53,8 @@ jobs:
         echo "🔄 CocoaPods 의존성 설치 중..."
         cd ios
         
-        # 더 안정적인 설치를 위한 추가 옵션
-        pod install --repo-update --clean-install --verbose --deployment
+        # 더 안정적인 설치를 위한 옵션 (배포 모드 비활성화: Podfile 변경사항 반영)
+        pod install --repo-update --clean-install --verbose
         
     - name: 🏗️ iOS 빌드 (Debug - iOS 15.0+)
       working-directory: mobile
