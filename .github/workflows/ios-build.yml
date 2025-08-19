@@ -75,7 +75,7 @@ jobs:
           xcrun simctl list devices available
 
       # ✅ 더 간단하고 안정적인 방식으로 변경
-      - name: 🧪 iOS 시뮬레이터 생성 및 부팅 (단순화)
+      - name: 🧪 iOS 시뮬레이터 생성 및 부팅 (수정된 런타임 ID)
         id: boot-sim
         run: |
           set -euo pipefail
@@ -83,11 +83,13 @@ jobs:
           echo "📋 사용 가능한 런타임 확인:"
           xcrun simctl list runtimes
 
-          # 첫 번째 사용 가능한 iOS 런타임 자동 선택
-          RUNTIME_ID=$(xcrun simctl list runtimes | grep "iOS" | head -1 | awk -F '[()]' '{print $2}')
+          # ✅ 올바른 런타임 ID 추출 (com.apple.CoreSimulator.SimRuntime.iOS-17-0 형식)
+          RUNTIME_ID=$(xcrun simctl list runtimes | grep "iOS" | head -1 | grep -o 'com\.apple\.CoreSimulator\.SimRuntime\.iOS-[0-9-]*')
           
           if [ -z "${RUNTIME_ID:-}" ]; then
             echo "❌ 사용할 iOS 런타임을 찾지 못했습니다."
+            echo "📋 사용 가능한 런타임 목록:"
+            xcrun simctl list runtimes
             exit 1
           fi
           echo "✅ 선택된 런타임 ID: ${RUNTIME_ID}"
@@ -100,9 +102,11 @@ jobs:
           echo "✅ 선택된 디바이스: ${DEVICE_TYPE}"
 
           # 시뮬레이터 생성 및 부팅
+          echo "🔨 시뮬레이터 생성 중..."
           UDID=$(xcrun simctl create "CI-iOS-Build" "$DEVICE_TYPE" "$RUNTIME_ID")
           echo "🆔 생성된 UDID: $UDID"
 
+          echo "🚀 시뮬레이터 부팅 중..."
           xcrun simctl boot "$UDID"
           xcrun simctl bootstatus "$UDID" -b
 
