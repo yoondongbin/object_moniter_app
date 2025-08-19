@@ -66,16 +66,36 @@ jobs:
         echo "📱 사용 가능한 시뮬레이터 (상위 10개):"
         xcrun simctl list devices available | grep -E "(iPhone|iPad)" | head -10 || true
 
-        echo "🏗️ iOS 앱 빌드 시작 (generic iOS Simulator 대상으로 빌드 - Release)..."
+        echo "🏗️ iOS 앱 빌드 시작 (Release)..."
+        # 우선 generic 대상 시도, 실패 시 첫 번째 사용 가능한 iPhone 시뮬레이터 이름으로 재시도
+        DEST_GENERIC="generic/platform=iOS Simulator"
+        FIRST_IPHONE_NAME=$(xcrun simctl list devices available | awk '/^\s+iPhone/{print substr($0, index($0,$2)); exit}' | sed -E 's/ \(.+//') || true
+        DEST_BY_NAME="platform=iOS Simulator,name=${FIRST_IPHONE_NAME}"
+
+        echo "🔎 1차 대상: ${DEST_GENERIC}"
+        set +e
         xcodebuild -workspace ios/mobile.xcworkspace \
           -scheme mobile \
           -configuration Release \
           -sdk iphonesimulator \
           -derivedDataPath ios/build \
-          -destination 'generic/platform=iOS Simulator' \
+          -destination "${DEST_GENERIC}" \
           IPHONEOS_DEPLOYMENT_TARGET=15.1 \
-          clean build \
-          | xcpretty
+          clean build | xcpretty
+        XC_STATUS=$?
+        set -e
+
+        if [ ${XC_STATUS} -ne 0 ]; then
+          echo "⚠️ generic 대상 실패 → 이름 기반 대상 재시도: ${DEST_BY_NAME}"
+          xcodebuild -workspace ios/mobile.xcworkspace \
+            -scheme mobile \
+            -configuration Release \
+            -sdk iphonesimulator \
+            -derivedDataPath ios/build \
+            -destination "${DEST_BY_NAME}" \
+            IPHONEOS_DEPLOYMENT_TARGET=15.1 \
+            clean build | xcpretty
+        fi
           
     - name: 📦 빌드 결과 확인
       working-directory: mobile
