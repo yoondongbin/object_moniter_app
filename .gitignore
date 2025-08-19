@@ -1,4 +1,57 @@
-# IDE and Editor files
+# ===== Node.js =====
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+# ===== React Native =====
+# Metro bundler cache
+.metro-health-check*
+.metro/
+
+# React Native builds
+mobile/android/app/build/
+mobile/android/.gradle/
+mobile/android/gradle.properties.bak
+mobile/android/local.properties
+mobile/android/app/my-upload-key.keystore
+
+# iOS builds
+mobile/ios/build/
+mobile/ios/Pods/
+mobile/ios/Podfile.lock
+mobile/ios/*.xcworkspace/xcuserdata/
+mobile/ios/*.xcodeproj/xcuserdata/
+mobile/ios/*.xcodeproj/project.xcworkspace/xcuserdata/
+
+# ===== Backend (Flask/Python) =====
+back_end/__pycache__/
+back_end/*.py[cod]
+back_end/*$py.class
+back_end/venv/
+back_end/.env
+back_end/instance/
+back_end/.pytest_cache/
+back_end/uploads/*
+!back_end/uploads/.gitkeep
+
+# ===== Docker & CI/CD =====
+.docker/
+docker-compose.override.yml
+.jenkins/
+jenkins_home/
+
+# ===== Environment & Config =====
+.env
+.env.local
+.env.*.local
+mobile/.env
+mobile/.env.*
+!mobile/.env.example
+
+# ===== IDE and Editor files =====
 .cursor/
 .cursor-server/
 *.cursor-*
@@ -7,8 +60,10 @@
 *.swp
 *.swo
 *~
+.vim/
+.emacs.d/
 
-# OS generated files
+# ===== OS generated files =====
 .DS_Store
 .DS_Store?
 ._*
@@ -16,8 +71,57 @@
 .Trashes
 ehthumbs.db
 Thumbs.db
+desktop.ini
 
-# Temporary files
+# ===== Logs =====
+*.log
+logs/
+mobile/ios-watcher.log
+mobile/metro.log
+
+# ===== Temporary files =====
 *.tmp
 *.temp
-*.log
+*.cache
+.cache/
+.temp/
+
+# ===== Build artifacts =====
+dist/
+build/
+*.apk
+*.ipa
+*.app.zip
+
+# ===== Database =====
+*.db
+*.sqlite
+*.sqlite3
+
+# ===== Security & Keys =====
+*.pem
+*.key
+*.p12
+*.mobileprovision
+secrets/
+.secrets/
+
+# ===== Testing =====
+coverage/
+.nyc_output/
+.coverage
+htmlcov/
+
+# ===== Package managers =====
+package-lock.json
+yarn.lock
+Pipfile.lock
+
+# ===== Miscellaneous =====
+.watchmanconfig
+.buckconfig
+.bundle/
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots
+fastlane/test_output
